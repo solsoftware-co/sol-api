@@ -1,0 +1,19 @@
+name = "sol-api"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+ENVIRONMENT = "development"
+
+[env.preview]
+name = "sol-api-preview"
+
+[env.preview.vars]
+ENVIRONMENT = "preview"
+
+[env.production]
+name = "sol-api"
+
+[env.production.vars]
+ENVIRONMENT = "production"
