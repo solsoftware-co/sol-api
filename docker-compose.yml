@@ -1,0 +1,19 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8787:8787"
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./.dev.vars:/app/.dev.vars:ro
+
+  test:
+    build: .
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./.dev.vars:/app/.dev.vars:ro
+    command: ["npx", "vitest", "run"]
+    profiles:
+      - test

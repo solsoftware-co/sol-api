@@ -106,3 +106,10 @@ Tests run inside the actual CF Workers runtime via `@cloudflare/vitest-pool-work
 - `specs/001-hono-client-api/contracts/api.md` — full endpoint contracts with request/response shapes
 - `specs/001-hono-client-api/data-model.md` — DB schema, TypeScript interfaces, validation rules
 - `specs/001-hono-client-api/research.md` — rationale behind platform, DB driver, auth, and testing choices
+
+## Active Technologies
+- TypeScript 5.x / Node 20 (image: `node:20`) + Hono 4.x, Wrangler 3.x, @neondatabase/serverless (002-dockerize-app)
+- Neon PostgreSQL (external; accessed via `DATABASE_URL` at runtime) (002-dockerize-app)
+
+## Recent Changes
+- 002-dockerize-app: Added TypeScript 5.x / Node 20 (image: `node:20-slim`) + Hono 4.x, Wrangler 3.x, @neondatabase/serverless

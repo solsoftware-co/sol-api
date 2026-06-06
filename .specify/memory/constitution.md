@@ -1,5 +1,28 @@
 <!--
-SYNC IMPACT REPORT
+SYNC IMPACT REPORT (2.1.0)
+==================
+Version change: 2.0.0 → 2.1.0
+Bump type: MINOR — Principle VI updated to permit Docker as an optional local dev tool.
+  Motivation: the 2.0.0 prohibition was an oversight; Docker as a convenience wrapper
+  is not an antipattern and should be explicitly allowed without constitution violation.
+
+Modified principles:
+  - VI. Minimal Infrastructure & DX — removed blanket Docker prohibition; Docker is now
+        permitted as an optional wrapper around `wrangler dev`. Three new non-negotiable
+        rules added: wrangler dev must still work alone, Docker must wrap wrangler dev
+        (not replace it), Docker images must not bake in secrets.
+
+Added to Technology Stack:
+  - Docker + Docker Compose (optional, any stable version)
+
+Templates requiring updates:
+  ✅ plan-template.md — No changes required; constitution check uses dynamic placeholder.
+  ✅ spec-template.md — No changes required.
+  ✅ tasks-template.md — No changes required.
+  ✅ agent-file-template.md — No changes required.
+
+==================
+SYNC IMPACT REPORT (2.0.0)
 ==================
 Version change: 1.2.0 → 2.0.0
 Bump type: MAJOR — all six principles replaced; governing service changed from
@@ -161,13 +184,16 @@ that are immediately correct and testable without additional context.
 
 ### VI. Minimal Infrastructure & Developer Experience
 
-The service MUST run entirely via `wrangler dev` with no Docker, container runtimes, or
-cloud-provider emulators required for local development. All production dependencies MUST
-have free tiers sufficient for the current scale. New infrastructure components MUST NOT
-be introduced without explicit governance amendment.
+The service MUST be runnable via `wrangler dev` alone. Docker is an approved optional
+convenience wrapper for local development but MUST NOT be required. All production
+dependencies MUST have free tiers sufficient for the current scale. New infrastructure
+components MUST NOT be introduced without explicit governance amendment.
 
 **Non-negotiable rules:**
-- Local development MUST work with `wrangler dev` alone; no additional services required
+- Local development MUST work with `wrangler dev` alone; Docker is optional, not required
+- Docker support, if provided, MUST wrap `wrangler dev` internally and MUST NOT replace it
+- Docker images MUST NOT bake in secrets or environment-specific values; all configuration
+  MUST be injected at container runtime via the `.dev.vars` file
 - The approved stack (see Technology Stack) is fixed; additions require a MINOR amendment;
   replacement of a core component requires a MAJOR amendment
 - Time from `git clone` to first successful local test MUST remain under 15 minutes
@@ -177,8 +203,9 @@ be introduced without explicit governance amendment.
   not the production branch
 
 **Rationale:** The Cloudflare Workers V8 isolate runtime eliminates cold starts and
-container overhead. `wrangler dev` provides a complete local environment. Keeping setup
-minimal ensures rapid onboarding for developers and AI agents alike.
+container overhead. `wrangler dev` provides a complete local environment. Docker is
+permitted as an optional developer convenience — for consistent environments across
+machines and CI — but never as a gate on local development.
 
 ## Technology Stack
 
@@ -194,6 +221,7 @@ a constitution amendment (MINOR bump minimum; MAJOR if a core component is repla
 | Validation | Zod | ^3.x |
 | Hosting | Cloudflare Workers | Free tier |
 | Local Dev Tooling | Wrangler | ^3.x (devDep) |
+| Local Dev Tooling (optional) | Docker + Docker Compose | any stable |
 | Testing | Vitest + @cloudflare/vitest-pool-workers | ^3.x (devDep) |
 
 **Explicitly out-of-scope:** Email/SMS sending (the notification service's concern),
@@ -289,4 +317,4 @@ gates in `plan-template.md` before merge. Violations of Principle VI (unapproved
 infrastructure) MUST be justified in the plan's Complexity Tracking table with explicit
 rationale for why no simpler approach exists.
 
-**Version**: 2.0.0 | **Ratified**: 2026-04-22 | **Last Amended**: 2026-04-24
+**Version**: 2.1.0 | **Ratified**: 2026-04-22 | **Last Amended**: 2026-05-03
