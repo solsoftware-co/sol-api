@@ -107,9 +107,28 @@ Tests run inside the actual CF Workers runtime via `@cloudflare/vitest-pool-work
 - `specs/001-hono-client-api/data-model.md` — DB schema, TypeScript interfaces, validation rules
 - `specs/001-hono-client-api/research.md` — rationale behind platform, DB driver, auth, and testing choices
 
+## Git Conventions
+
+### Branch Naming
+Branches follow `{type}/{number}-{description}` (e.g. `feat/003-ci-cd`, `fix/004-auth-bug`).
+
+Valid types: `feat` · `fix` · `chore` · `docs` · `refactor` · `test` · `ci` · `build`
+
+### Commit Messages
+All commits must follow [Conventional Commits](https://www.conventionalcommits.org/):
+```
+feat: add preview deployments
+fix: correct health check error handling
+chore: update dependencies
+ci: add GitHub Actions workflow
+```
+Types that trigger semantic releases: `feat` → minor bump, `fix` → patch bump, breaking change footer → major bump.
+
 ## Active Technologies
 - TypeScript 5.x / Node 20 (image: `node:20`) + Hono 4.x, Wrangler 3.x, @neondatabase/serverless (002-dockerize-app)
 - Neon PostgreSQL (external; accessed via `DATABASE_URL` at runtime) (002-dockerize-app)
+- TypeScript 5.x / Node 20 + Wrangler 3.x, `cloudflare/wrangler-action@v3`, `semantic-release` ^24.x (feat/003-ci-cd)
+- N/A (no new data storage; Neon credentials passed per-environment via GitHub Secrets) (feat/003-ci-cd)
 
 ## Recent Changes
 - 002-dockerize-app: Added TypeScript 5.x / Node 20 (image: `node:20-slim`) + Hono 4.x, Wrangler 3.x, @neondatabase/serverless

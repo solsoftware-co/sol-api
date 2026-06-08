@@ -1,0 +1,20 @@
+name: Cleanup
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  delete-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete preview worker
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE \
+            "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/workers/services/sol-api-pr-${{ github.event.pull_request.number }}" \
+            -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}")
+          if [ "$STATUS" != "200" ] && [ "$STATUS" != "404" ]; then
+            echo "Unexpected status $STATUS from Cloudflare delete"
+            exit 1
+          fi
+          echo "Worker deleted (status: $STATUS)"
