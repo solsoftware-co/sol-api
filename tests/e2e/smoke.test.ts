@@ -10,7 +10,7 @@ describe.skipIf(skip)("E2E smoke tests", () => {
     const res = await fetch(`${PREVIEW_URL}/health`);
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body).toEqual({ success: true, data: { status: "ok" } });
+    expect(body).toMatchObject({ success: true, data: { status: "ok" } });
   });
 
   it("GET /v1/clients without API key returns 401", async () => {

@@ -39,7 +39,7 @@ jobs:
         run: npm run test:e2e
         env:
           PREVIEW_URL: ${{ env.PREVIEW_URL }}
-          API_KEY_PREVIEW: ${{ secrets.API_KEY_STAGING }}
+          API_KEY_STAGING: ${{ secrets.API_KEY_STAGING }}
       - name: Post preview URL comment
         if: always()
         uses: actions/github-script@v7
