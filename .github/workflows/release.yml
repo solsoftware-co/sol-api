@@ -22,7 +22,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Run tests
-        run: npm test -- --bail
+        run: npm test -- --bail=1
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL_PRODUCTION }}
           API_KEY: ${{ secrets.API_KEY_PRODUCTION }}

@@ -17,7 +17,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm test -- --bail --reporter=verbose --reporter=json --outputFile=test-results.json
+      - run: npm test -- --bail=1 --reporter=verbose --reporter=json --outputFile=test-results.json
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           API_KEY: ${{ secrets.API_KEY }}
