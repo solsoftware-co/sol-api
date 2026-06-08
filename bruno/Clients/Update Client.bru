@@ -1,0 +1,22 @@
+meta {
+  name: Update Client
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/v1/clients/acme-corp
+  body: json
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+body:json {
+  {
+    "name": "Acme Corporation",
+    "timezone": "America/Chicago"
+  }
+}

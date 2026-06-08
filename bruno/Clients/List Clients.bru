@@ -1,0 +1,15 @@
+meta {
+  name: List Clients
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/clients
+  body: none
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}

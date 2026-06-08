@@ -1,0 +1,28 @@
+meta {
+  name: Create Client
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/v1/clients
+  body: json
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+body:json {
+  {
+    "id": "acme-corp",
+    "name": "Acme Corp",
+    "email": "contact@acme.com",
+    "timezone": "America/New_York",
+    "ga4_property_id": null,
+    "settings": {},
+    "google_service_account_email": null,
+    "google_service_account_key": null
+  }
+}
