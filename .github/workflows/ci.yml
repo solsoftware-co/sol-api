@@ -1,9 +1,11 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  pull-requests: write
 
 jobs:
   test:
@@ -15,6 +17,61 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm test
+      - run: npm test -- --bail --reporter=verbose --reporter=json --outputFile=test-results.json
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          API_KEY: ${{ secrets.API_KEY }}
+      - name: Post test summary comment
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let body;
+            try {
+              const raw = JSON.parse(fs.readFileSync('test-results.json', 'utf8'));
+              const total = raw.numTotalTests ?? 0;
+              const passed = raw.numPassedTests ?? 0;
+              const failed = raw.numFailedTests ?? 0;
+              const skipped = raw.numPendingTests ?? 0;
+              const icon = failed > 0 ? '❌' : '✅';
+              let rows = '';
+              if (failed > 0 && raw.testResults) {
+                const failedSuites = raw.testResults
+                  .filter(s => s.status === 'failed')
+                  .map(s => {
+                    const name = s.testFilePath.replace(process.cwd() + '/', '');
+                    const failures = s.assertionResults
+                      .filter(r => r.status === 'failed')
+                      .map(r => `- ${r.fullName}: ${r.failureMessages.join(' | ')}`)
+                      .join('\n');
+                    return `**${name}**\n${failures}`;
+                  })
+                  .join('\n\n');
+                rows = `\n<details><summary>Failed suites</summary>\n\n${failedSuites}\n\n</details>`;
+              }
+              body = `<!-- test-results -->\n## Test Results ${icon}\n| Total | Passed | Failed | Skipped |\n|-------|--------|--------|---------|\n| ${total} | ${passed} | ${failed} | ${skipped} |${rows}`;
+            } catch (e) {
+              body = `<!-- test-results -->\n## Test Results ⚠️\nCould not read test results. Check the Actions log for details.`;
+            }
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.includes('<!-- test-results -->'));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
