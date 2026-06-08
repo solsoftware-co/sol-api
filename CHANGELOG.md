@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/solsoftware-co/sol-api/compare/v1.0.0...v1.1.0) (2026-06-08)
+
+
+### Features
+
+* add Bruno API collection for all endpoints ([1c23571](https://github.com/solsoftware-co/sol-api/commit/1c23571ed0a7eee8410e4ff47fe4a4f705df32db))
+
 # 1.0.0 (2026-06-08)
 
 
