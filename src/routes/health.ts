@@ -16,14 +16,14 @@ health.get("/", async (c) => {
         environment: c.env.ENVIRONMENT,
       },
     });
-  } catch {
+  } catch (err) {
     return c.json(
       {
         success: false,
         error: {
           code: ErrorCode.SERVICE_UNAVAILABLE,
           message: "Database connection failed",
-          details: null,
+          details: err instanceof Error ? err.message : String(err),
         },
       },
       503
