@@ -31,15 +31,15 @@ clients.get("/", async (c) => {
     );
   }
 
-  const sql = createDb(c.env.DATABASE_URL);
-  const rows = await listClients(sql, { limit });
+  const db = createDb(c.env.DATABASE_URL);
+  const rows = await listClients(db, { limit });
   return c.json({ success: true, data: rows });
 });
 
 clients.get("/:id", async (c) => {
-  const sql = createDb(c.env.DATABASE_URL);
+  const db = createDb(c.env.DATABASE_URL);
   const id = c.req.param("id");
-  const client = await getClientById(sql, id);
+  const client = await getClientById(db, id);
 
   if (!client) {
     return c.json(
@@ -77,8 +77,8 @@ clients.post("/", async (c) => {
   }
 
   try {
-    const sql = createDb(c.env.DATABASE_URL);
-    const client = await insertClient(sql, result.data);
+    const db = createDb(c.env.DATABASE_URL);
+    const client = await insertClient(db, result.data);
     return c.json({ success: true, data: client }, 201);
   } catch (err) {
     if (err instanceof ConflictError) {
@@ -117,8 +117,8 @@ clients.patch("/:id", async (c) => {
     );
   }
 
-  const sql = createDb(c.env.DATABASE_URL);
-  const updated = await updateClient(sql, id, result.data);
+  const db = createDb(c.env.DATABASE_URL);
+  const updated = await updateClient(db, id, result.data);
 
   if (!updated) {
     return c.json(

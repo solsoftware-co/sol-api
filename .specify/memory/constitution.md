@@ -1,4 +1,17 @@
 <!--
+SYNC IMPACT REPORT (2.2.0)
+==================
+Version change: 2.1.0 → 2.2.0
+Bump type: MINOR — Principle VI Technology Stack updated to add Drizzle ORM.
+  Motivation: drizzle-orm replaces raw neon() SQL calls with a type-safe query
+  builder; drizzle-kit provides a versioned migration workflow. Both are required
+  by feature 005-drizzle-client (US2: versioned migration workflow).
+
+Added to Technology Stack:
+  - drizzle-orm ^0.38.x (runtime)
+  - drizzle-kit ^0.30.x (devDep)
+
+==================
 SYNC IMPACT REPORT (2.1.0)
 ==================
 Version change: 2.0.0 → 2.1.0
@@ -218,6 +231,8 @@ a constitution amendment (MINOR bump minimum; MAJOR if a core component is repla
 | Runtime | Cloudflare Workers (V8 isolate) | compatibility_date: 2024-09-23 |
 | Language | TypeScript | 5.x |
 | Database Client | @neondatabase/serverless | ^1.x |
+| ORM / Query Builder | drizzle-orm | ^0.38.x (runtime) |
+| Schema Migration | drizzle-kit | ^0.30.x (devDep) |
 | Validation | Zod | ^3.x |
 | Hosting | Cloudflare Workers | Free tier |
 | Local Dev Tooling | Wrangler | ^3.x (devDep) |
@@ -317,4 +332,4 @@ gates in `plan-template.md` before merge. Violations of Principle VI (unapproved
 infrastructure) MUST be justified in the plan's Complexity Tracking table with explicit
 rationale for why no simpler approach exists.
 
-**Version**: 2.1.0 | **Ratified**: 2026-04-22 | **Last Amended**: 2026-05-03
+**Version**: 2.2.0 | **Ratified**: 2026-04-22 | **Last Amended**: 2026-06-08
