@@ -8,6 +8,32 @@ permissions:
   pull-requests: write
 
 jobs:
+  migration-check:
+    name: Migration check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+
+      - name: Schema drift check
+        run: |
+          npm run db:generate
+          if ! git diff --exit-code db/migrations/; then
+            echo "::error::schema.ts has changes not reflected in committed migrations. Run 'npm run db:generate' and commit the output."
+            exit 1
+          fi
+        env:
+          DATABASE_URL: postgres://placeholder/placeholder
+
+      - name: Apply migrations to CI branch
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_CI }}
+
   test:
     runs-on: ubuntu-latest
     steps:
