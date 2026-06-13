@@ -26,6 +26,12 @@ export const createClientSchema = z.object({
     .nullable()
     .optional(),
   google_service_account_key: z.string().nullable().optional(),
+  sanity_project_id: z.string().nullable().optional(),
+  sanity_production_dataset: z.string().nullable().optional(),
+  sanity_staging_dataset: z.string().nullable().optional(),
+  github_repo: z.string().nullable().optional(),
+  github_default_branch: z.string().nullable().optional().default("main"),
+  github_test_branch: z.string().nullable().optional(),
 });
 
 export const updateClientSchema = z
@@ -45,6 +51,12 @@ export const updateClientSchema = z
       .nullable()
       .optional(),
     google_service_account_key: z.string().nullable().optional(),
+    sanity_project_id: z.string().nullable().optional(),
+    sanity_production_dataset: z.string().nullable().optional(),
+    sanity_staging_dataset: z.string().nullable().optional(),
+    github_repo: z.string().nullable().optional(),
+    github_default_branch: z.string().nullable().optional(),
+    github_test_branch: z.string().nullable().optional(),
   })
   .refine(
     (data) => Object.keys(data).length > 0,

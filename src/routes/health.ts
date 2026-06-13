@@ -6,8 +6,8 @@ const health = new Hono<{ Bindings: Env }>();
 
 health.get("/", async (c) => {
   try {
-    const sql = createDb(c.env.DATABASE_URL);
-    await healthCheck(sql);
+    const db = createDb(c.env.DATABASE_URL);
+    await healthCheck(db);
     return c.json({
       success: true,
       data: {

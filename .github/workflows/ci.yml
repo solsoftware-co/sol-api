@@ -8,6 +8,34 @@ permissions:
   pull-requests: write
 
 jobs:
+  migration-check:
+    name: Migration check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+
+      - name: Schema drift check
+        run: |
+          npm run db:generate
+          new_sql=$(git ls-files --others --exclude-standard db/migrations/ | grep '\.sql$' || true)
+          if [ -n "$new_sql" ]; then
+            echo "::error::Uncommitted migration SQL detected — schema.ts has changes not reflected in db/migrations/. Run 'npm run db:generate' and commit the result."
+            echo "$new_sql"
+            exit 1
+          fi
+        env:
+          DATABASE_URL: postgres://placeholder/placeholder
+
+      - name: Apply migrations to CI branch
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_CI }}
+
   test:
     runs-on: ubuntu-latest
     steps:
