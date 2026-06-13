@@ -10,9 +10,15 @@ if (!DATABASE_URL) throw new Error("DATABASE_URL environment variable is require
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const migrationsFolder = path.resolve(__dirname, "../db/migrations");
 
-const sql = neon(DATABASE_URL);
-const db = drizzle(sql);
+async function main() {
+  const sql = neon(DATABASE_URL!);
+  const db = drizzle(sql);
+  console.log("Running migrations from:", migrationsFolder);
+  await migrate(db, { migrationsFolder, migrationsTable: "sol_api_migrations" });
+  console.log("Migrations complete.");
+}
 
-console.log("Running migrations from:", migrationsFolder);
-await migrate(db, { migrationsFolder, migrationsTable: "sol_api_migrations" });
-console.log("Migrations complete.");
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

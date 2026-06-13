@@ -7,6 +7,7 @@ export default defineConfig({
   migrations: {
     table: "sol_api_migrations",
   },
+  tablesFilter: ["clients", "notification_logs"],
   dbCredentials: {
     url: process.env.DATABASE_URL!,
   },

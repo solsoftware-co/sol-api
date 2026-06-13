@@ -5,6 +5,7 @@ import {
   jsonb,
   timestamp,
   bigserial,
+  foreignKey,
 } from "drizzle-orm/pg-core";
 
 export const clients = pgTable("clients", {
@@ -28,14 +29,23 @@ export const clients = pgTable("clients", {
 
 export const notification_logs = pgTable("notification_logs", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
-  client_id: text("client_id")
-    .notNull()
-    .references(() => clients.id),
+  client_id: text("client_id").notNull(),
   workflow: text("workflow").notNull(),
   event_name: text("event_name").notNull(),
   outcome: text("outcome").notNull(),
   created_at: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
-});
+  recipient_email: text("recipient_email"),
+  subject: text("subject"),
+  resend_id: text("resend_id"),
+  error_message: text("error_message"),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+}, (table) => [
+  foreignKey({
+    columns: [table.client_id],
+    foreignColumns: [clients.id],
+    name: "notification_logs_client_id_fkey",
+  }),
+]);
 
 export type Client = typeof clients.$inferSelect;
 export type NewClient = typeof clients.$inferInsert;
