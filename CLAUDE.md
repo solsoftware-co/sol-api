@@ -129,6 +129,8 @@ Types that trigger semantic releases: `feat` → minor bump, `fix` → patch bum
 - Neon PostgreSQL (external; accessed via `DATABASE_URL` at runtime) (002-dockerize-app)
 - TypeScript 5.x / Node 20 + Wrangler 3.x, `cloudflare/wrangler-action@v3`, `semantic-release` ^24.x (feat/003-ci-cd)
 - N/A (no new data storage; Neon credentials passed per-environment via GitHub Secrets) (feat/003-ci-cd)
+- TypeScript 5.x / Node 20 + Hono 4.x, Wrangler 3.x, `drizzle-orm` ^0.38.x (runtime), `drizzle-kit` ^0.30.x (devDep), `@neondatabase/serverless` ^1.x (unchanged), `tsx` (devDep, migration runner) (feat/005-drizzle-client)
+- Neon PostgreSQL — existing `clients` table (V001–V004 applied by `sol-notification-service`); Drizzle owns all future migrations via `sol_api_migrations` tracking table (feat/005-drizzle-client)
 
 ## Recent Changes
 - 002-dockerize-app: Added TypeScript 5.x / Node 20 (image: `node:20-slim`) + Hono 4.x, Wrangler 3.x, @neondatabase/serverless

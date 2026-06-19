@@ -2,6 +2,8 @@ export interface Env {
   DATABASE_URL: string;
   API_KEY: string;
   ENVIRONMENT: string;
+  SANITY_API_TOKEN: string;
+  GITHUB_TOKEN: string;
 }
 
 export enum ErrorCode {
@@ -30,10 +32,16 @@ export interface ClientRecord {
   ga4_property_id: string | null;
   active: boolean;
   settings: Record<string, unknown>;
-  timezone: Timezone;
+  timezone: string;
   google_service_account_email: string | null;
   google_service_account_key: string | null;
   created_at: string;
+  sanity_project_id: string | null;
+  sanity_production_dataset: string | null;
+  sanity_staging_dataset: string | null;
+  github_repo: string | null;
+  github_default_branch: string | null;
+  github_test_branch: string | null;
 }
 
 export interface ClientSummary {
@@ -43,7 +51,13 @@ export interface ClientSummary {
   ga4_property_id: string | null;
   active: boolean;
   settings: Record<string, unknown>;
-  timezone: Timezone;
+  timezone: string;
   google_service_account_email: string | null;
   created_at: string;
+  sanity_project_id: string | null;
+  sanity_production_dataset: string | null;
+  sanity_staging_dataset: string | null;
+  github_repo: string | null;
+  github_default_branch: string | null;
+  github_test_branch: string | null;
 }

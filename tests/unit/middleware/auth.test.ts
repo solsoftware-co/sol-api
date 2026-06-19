@@ -20,7 +20,7 @@ describe("Auth middleware", () => {
   it("rejects requests with missing X-API-Key", async () => {
     const res = await app.request("/v1/clients", {}, TEST_ENV);
     expect(res.status).toBe(401);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(false);
     expect(body.error.code).toBe("UNAUTHORIZED");
   });
@@ -32,7 +32,7 @@ describe("Auth middleware", () => {
       TEST_ENV
     );
     expect(res.status).toBe(401);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.error.code).toBe("UNAUTHORIZED");
   });
 

@@ -61,7 +61,7 @@ describe("GET /v1/clients/:id", () => {
         TEST_ENV
       );
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = await res.json() as any;
       expect(body.success).toBe(true);
       expect(body.data.id).toBe(TEST_CLIENT_ID);
       expect("google_service_account_key" in body.data).toBe(true);
@@ -77,7 +77,7 @@ describe("GET /v1/clients/:id", () => {
         TEST_ENV
       );
       expect(res.status).toBe(404);
-      const body = await res.json();
+      const body = await res.json() as any;
       expect(body.error.code).toBe("NOT_FOUND");
     })
   );
@@ -112,7 +112,7 @@ describe("GET /v1/clients", () => {
     skipIfNoDb(async () => {
       const res = await app.request("/v1/clients", authed(), TEST_ENV);
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = await res.json() as any;
       expect(body.success).toBe(true);
       expect(Array.isArray(body.data)).toBe(true);
       for (const client of body.data) {
@@ -137,7 +137,7 @@ describe("GET /v1/clients", () => {
     skipIfNoDb(async () => {
       const res = await app.request("/v1/clients?limit=1", authed(), TEST_ENV);
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = await res.json() as any;
       expect(body.data.length).toBeLessThanOrEqual(1);
     })
   );
@@ -151,7 +151,7 @@ describe("GET /v1/clients", () => {
     "google_service_account_key is absent from every list item",
     skipIfNoDb(async () => {
       const res = await app.request("/v1/clients", authed(), TEST_ENV);
-      const body = await res.json();
+      const body = await res.json() as any;
       for (const item of body.data) {
         expect(item).not.toHaveProperty("google_service_account_key");
       }
@@ -188,7 +188,7 @@ describe("POST /v1/clients", () => {
         TEST_ENV
       );
       expect(res.status).toBe(201);
-      const body = await res.json();
+      const body = await res.json() as any;
       expect(body.success).toBe(true);
       expect(body.data.id).toBe(NEW_CLIENT_ID);
     })
@@ -212,7 +212,7 @@ describe("POST /v1/clients", () => {
         TEST_ENV
       );
       expect(res.status).toBe(409);
-      const body = await res.json();
+      const body = await res.json() as any;
       expect(body.error.code).toBe("CONFLICT");
     })
   );
@@ -228,7 +228,7 @@ describe("POST /v1/clients", () => {
       TEST_ENV
     );
     expect(res.status).toBe(422);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.error.code).toBe("VALIDATION_ERROR");
     expect(Array.isArray(body.error.details)).toBe(true);
   });
@@ -278,7 +278,7 @@ describe("PATCH /v1/clients/:id", () => {
         TEST_ENV
       );
       expect(patchRes.status).toBe(200);
-      const patchBody = await patchRes.json();
+      const patchBody = await patchRes.json() as any;
       expect(patchBody.data.name).toBe(newName);
       expect(patchBody.data.email).toBe("test@example.com");
     })

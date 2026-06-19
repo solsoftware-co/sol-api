@@ -9,7 +9,7 @@ describe.skipIf(skip)("E2E smoke tests", () => {
   it("GET /health returns 200 with status ok", async () => {
     const res = await fetch(`${PREVIEW_URL}/health`);
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body).toMatchObject({ success: true, data: { status: "ok" } });
   });
 
@@ -23,7 +23,7 @@ describe.skipIf(skip)("E2E smoke tests", () => {
       headers: { "X-API-Key": API_KEY! },
     });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
   });
 });
