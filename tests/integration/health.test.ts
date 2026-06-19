@@ -14,7 +14,7 @@ describe("GET /health", () => {
       { ...BASE_ENV, DATABASE_URL: "postgres://invalid-host-that-does-not-exist/db" }
     );
     expect(res.status).toBe(503);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(false);
     expect(body.error.code).toBe("SERVICE_UNAVAILABLE");
   });
@@ -40,7 +40,7 @@ describe("GET /health", () => {
       { ...BASE_ENV, DATABASE_URL: dbUrl, ENVIRONMENT: "test" }
     );
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
     expect(body.data.status).toBe("ok");
     expect(body.data.database).toBe("connected");
