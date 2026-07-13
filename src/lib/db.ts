@@ -1,9 +1,9 @@
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
-import { eq, and, getTableColumns } from "drizzle-orm";
+import { eq, and, gte, lte, desc, getTableColumns } from "drizzle-orm";
 import { sql } from "drizzle-orm";
-import { clients } from "./schema.js";
-import type { ClientRecord, ClientSummary } from "../types/index.js";
+import { clients, notification_logs } from "./schema.js";
+import type { ClientRecord, ClientSummary, NotificationLog } from "../types/index.js";
 
 export type Db = ReturnType<typeof drizzle>;
 
@@ -102,6 +102,86 @@ export async function insertClient(
       (err as { code: string }).code === "23505"
     ) {
       throw new ConflictError(`Client already exists: ${data.id}`);
+    }
+    throw err;
+  }
+}
+
+export class ForeignKeyError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ForeignKeyError";
+  }
+}
+
+export async function listNotificationLogs(
+  db: Db,
+  opts: { client_id?: string; from?: string; to?: string; limit?: number } = {}
+): Promise<NotificationLog[]> {
+  const conditions = [
+    opts.client_id ? eq(notification_logs.client_id, opts.client_id) : undefined,
+    opts.from ? gte(notification_logs.created_at, opts.from) : undefined,
+    opts.to ? lte(notification_logs.created_at, opts.to) : undefined,
+  ].filter(Boolean) as Parameters<typeof and>;
+
+  const query = db
+    .select()
+    .from(notification_logs)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(notification_logs.created_at));
+
+  const rows = opts.limit !== undefined ? await query.limit(opts.limit) : await query;
+  return rows as NotificationLog[];
+}
+
+export async function getNotificationLogById(
+  db: Db,
+  id: number
+): Promise<NotificationLog | null> {
+  const rows = await db
+    .select()
+    .from(notification_logs)
+    .where(eq(notification_logs.id, id))
+    .limit(1);
+  return (rows[0] as NotificationLog) ?? null;
+}
+
+export async function insertNotificationLog(
+  db: Db,
+  data: {
+    client_id: string;
+    workflow: string;
+    event_name: string;
+    outcome: string;
+    recipient_email?: string | null;
+    subject?: string | null;
+    resend_id?: string | null;
+    error_message?: string | null;
+    metadata?: Record<string, unknown>;
+  }
+): Promise<NotificationLog> {
+  try {
+    const rows = await db
+      .insert(notification_logs)
+      .values({
+        client_id: data.client_id,
+        workflow: data.workflow,
+        event_name: data.event_name,
+        outcome: data.outcome,
+        recipient_email: data.recipient_email ?? null,
+        subject: data.subject ?? null,
+        resend_id: data.resend_id ?? null,
+        error_message: data.error_message ?? null,
+        metadata: data.metadata ?? {},
+      })
+      .returning();
+    return rows[0] as NotificationLog;
+  } catch (err: unknown) {
+    if (err && typeof err === "object" && "code" in err) {
+      const code = (err as { code: string }).code;
+      if (code === "23503") {
+        throw new ForeignKeyError(`Client not found: ${data.client_id}`);
+      }
     }
     throw err;
   }

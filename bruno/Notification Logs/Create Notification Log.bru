@@ -1,0 +1,29 @@
+meta {
+  name: Create Notification Log
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/v1/notification-logs
+  body: json
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+body:json {
+  {
+    "client_id": "acme-corp",
+    "workflow": "weekly-report",
+    "event_name": "report_sent",
+    "outcome": "sent",
+    "recipient_email": "contact@acme.com",
+    "subject": "Your weekly report",
+    "resend_id": null,
+    "error_message": null,
+    "metadata": {}
+  }
+}

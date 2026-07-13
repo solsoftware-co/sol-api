@@ -44,6 +44,20 @@ export interface ClientRecord {
   github_test_branch: string | null;
 }
 
+export interface NotificationLog {
+  id: number;
+  client_id: string;
+  workflow: string;
+  event_name: string;
+  outcome: string;
+  created_at: string;
+  recipient_email: string | null;
+  subject: string | null;
+  resend_id: string | null;
+  error_message: string | null;
+  metadata: Record<string, unknown>;
+}
+
 export interface ClientSummary {
   id: string;
   name: string;
