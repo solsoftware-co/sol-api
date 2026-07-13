@@ -75,6 +75,7 @@ List all active clients.
 | Param | Type | Default | Description |
 |-------|------|---------|-------------|
 | limit | integer | none | Max number of records to return |
+| email | string | none | Filter to the active client with this exact email |
 
 Returns `ClientSummary` objects — `google_service_account_key` is excluded from list responses (use the single-record endpoint when credentials are needed).
 

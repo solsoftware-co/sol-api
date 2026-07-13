@@ -31,8 +31,10 @@ clients.get("/", async (c) => {
     );
   }
 
+  const email = c.req.query("email");
+
   const db = createDb(c.env.DATABASE_URL);
-  const rows = await listClients(db, { limit });
+  const rows = await listClients(db, { limit, email });
   return c.json({ success: true, data: rows });
 });
 
