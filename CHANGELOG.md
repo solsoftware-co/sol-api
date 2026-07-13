@@ -1,3 +1,17 @@
+# [1.2.0](https://github.com/solsoftware-co/sol-api/compare/v1.1.0...v1.2.0) (2026-06-19)
+
+
+### Bug Fixes
+
+* cast res.json() to any in tests to satisfy tsc strict unknown check ([597d746](https://github.com/solsoftware-co/sol-api/commit/597d746f67d30e18a62d5c4b2d9aab5f2c96cfcd))
+* correct drizzle/neon compatibility and migration baseline ([455ab25](https://github.com/solsoftware-co/sol-api/commit/455ab25db47bad74e616abe88a4c9eaa119fcd8b))
+
+
+### Features
+
+* add Drizzle ORM and Sanity/GitHub integration fields to clients ([60d9e3d](https://github.com/solsoftware-co/sol-api/commit/60d9e3dabfb9d046c2ed0cc104bc7b405ab277ca))
+* added husky pre-push check ([e740a93](https://github.com/solsoftware-co/sol-api/commit/e740a93c4570a57e70b55941a78581f362640456))
+
 # [1.1.0](https://github.com/solsoftware-co/sol-api/compare/v1.0.0...v1.1.0) (2026-06-08)
 
 
