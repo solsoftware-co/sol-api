@@ -195,6 +195,51 @@ describe("POST /v1/clients", () => {
   );
 
   it(
+    "creates client with default_email",
+    skipIfNoDb(async () => {
+      const id = `${NEW_CLIENT_ID}-default-email`;
+      const res = await app.request(
+        "/v1/clients",
+        authed({
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id,
+            name: "Default Email Client",
+            email: "contact@example.com",
+            default_email: "default@example.com",
+          }),
+        }),
+        TEST_ENV
+      );
+      expect(res.status).toBe(201);
+      const body = await res.json() as any;
+      expect(body.data.default_email).toBe("default@example.com");
+
+      const sql = neon(DB_URL!);
+      await sql`DELETE FROM clients WHERE id = ${id}`;
+    })
+  );
+
+  it("returns 422 when default_email lacks @", async () => {
+    const res = await app.request(
+      "/v1/clients",
+      authed({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: "bad-default-email",
+          name: "Bad Default Email",
+          email: "contact@example.com",
+          default_email: "not-an-email",
+        }),
+      }),
+      TEST_ENV
+    );
+    expect(res.status).toBe(422);
+  });
+
+  it(
     "returns 409 on duplicate ID",
     skipIfNoDb(async () => {
       const payload = {
@@ -281,6 +326,24 @@ describe("PATCH /v1/clients/:id", () => {
       const patchBody = await patchRes.json() as any;
       expect(patchBody.data.name).toBe(newName);
       expect(patchBody.data.email).toBe("test@example.com");
+    })
+  );
+
+  it(
+    "updates default_email",
+    skipIfNoDb(async () => {
+      const res = await app.request(
+        `/v1/clients/${TEST_CLIENT_ID}`,
+        authed({
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ default_email: "updated-default@example.com" }),
+        }),
+        TEST_ENV
+      );
+      expect(res.status).toBe(200);
+      const body = await res.json() as any;
+      expect(body.data.default_email).toBe("updated-default@example.com");
     })
   );
 
