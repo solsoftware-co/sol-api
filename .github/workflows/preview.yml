@@ -31,6 +31,10 @@ jobs:
         run: |
           echo "${{ secrets.DATABASE_URL_STAGING }}" | npx wrangler secret put DATABASE_URL --name ${{ env.WORKER_NAME }}
           echo "${{ secrets.API_KEY_STAGING }}" | npx wrangler secret put API_KEY --name ${{ env.WORKER_NAME }}
+      - name: Apply migrations to staging
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_STAGING }}
       - name: Set PREVIEW_URL
         run: echo "PREVIEW_URL=https://${{ env.WORKER_NAME }}.${{ secrets.WORKERS_SUBDOMAIN }}.workers.dev" >> $GITHUB_ENV
       - name: Wait for Worker cold start
