@@ -1,0 +1,22 @@
+meta {
+  name: List Notification Logs
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/notification-logs
+  body: none
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+params:query {
+  ~client_id: acme-corp
+  ~from: 2024-01-01
+  ~to: 2024-12-31
+  ~limit: 50
+}
