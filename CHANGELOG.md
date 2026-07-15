@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/solsoftware-co/sol-api/compare/v1.2.0...v1.3.0) (2026-07-15)
+
+
+### Features
+
+* add notification-logs endpoint ([9fd3135](https://github.com/solsoftware-co/sol-api/commit/9fd3135debf768308434a1af47071671321a6366))
+
 # [1.2.0](https://github.com/solsoftware-co/sol-api/compare/v1.1.0...v1.2.0) (2026-06-19)
 
 
