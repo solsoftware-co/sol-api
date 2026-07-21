@@ -27,6 +27,10 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL_PRODUCTION }}
           API_KEY: ${{ secrets.API_KEY_PRODUCTION }}
+      - name: Apply migrations to production
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_PRODUCTION }}
       - name: Deploy to production
         uses: cloudflare/wrangler-action@v3
         with:
