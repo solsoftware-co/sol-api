@@ -25,6 +25,7 @@ export const clients = pgTable("clients", {
   github_repo: text("github_repo"),
   github_default_branch: text("github_default_branch").default("main"),
   github_test_branch: text("github_test_branch"),
+  default_email: text("default_email"),
 });
 
 export const notification_logs = pgTable("notification_logs", {

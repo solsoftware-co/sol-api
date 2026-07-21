@@ -71,6 +71,7 @@ export async function insertClient(
     github_repo?: string | null;
     github_default_branch?: string | null;
     github_test_branch?: string | null;
+    default_email?: string | null;
   }
 ): Promise<ClientRecord> {
   try {
@@ -91,6 +92,7 @@ export async function insertClient(
         github_repo: data.github_repo ?? null,
         github_default_branch: data.github_default_branch ?? "main",
         github_test_branch: data.github_test_branch ?? null,
+        default_email: data.default_email ?? null,
       })
       .returning();
     return rows[0] as ClientRecord;
@@ -202,6 +204,7 @@ const UPDATABLE_COLUMNS = new Set([
   "github_repo",
   "github_default_branch",
   "github_test_branch",
+  "default_email",
 ]);
 
 export async function updateClient(
