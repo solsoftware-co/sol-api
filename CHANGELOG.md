@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/solsoftware-co/sol-api/compare/v1.4.0...v1.4.1) (2026-07-21)
+
+
+### Bug Fixes
+
+* apply migrations to production before deploy on release ([1c0f128](https://github.com/solsoftware-co/sol-api/commit/1c0f128d989d028a4cf4c7cc048ffe92024b60ee))
+
 # [1.4.0](https://github.com/solsoftware-co/sol-api/compare/v1.3.0...v1.4.0) (2026-07-21)
 
 
