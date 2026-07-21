@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/solsoftware-co/sol-api/compare/v1.3.0...v1.4.0) (2026-07-21)
+
+
+### Features
+
+* add default_email column to clients table ([dd4cb35](https://github.com/solsoftware-co/sol-api/commit/dd4cb35ac8a58499c125ebace49840d5979735f6))
+
 # [1.3.0](https://github.com/solsoftware-co/sol-api/compare/v1.2.0...v1.3.0) (2026-07-15)
 
 
