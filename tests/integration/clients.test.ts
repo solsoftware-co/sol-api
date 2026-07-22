@@ -142,6 +142,49 @@ describe("GET /v1/clients", () => {
     })
   );
 
+  it(
+    "filters by email param",
+    skipIfNoDb(async () => {
+      const res = await app.request(
+        "/v1/clients?email=test@example.com",
+        authed(),
+        TEST_ENV
+      );
+      expect(res.status).toBe(200);
+      const body = await res.json() as any;
+      expect(body.data.length).toBe(1);
+      expect(body.data[0].id).toBe(TEST_CLIENT_ID);
+    })
+  );
+
+  it(
+    "returns empty array when email matches no active client",
+    skipIfNoDb(async () => {
+      const res = await app.request(
+        "/v1/clients?email=nobody@example.com",
+        authed(),
+        TEST_ENV
+      );
+      expect(res.status).toBe(200);
+      const body = await res.json() as any;
+      expect(body.data).toEqual([]);
+    })
+  );
+
+  it(
+    "does not match inactive client by email",
+    skipIfNoDb(async () => {
+      const res = await app.request(
+        "/v1/clients?email=inactive@example.com",
+        authed(),
+        TEST_ENV
+      );
+      expect(res.status).toBe(200);
+      const body = await res.json() as any;
+      expect(body.data).toEqual([]);
+    })
+  );
+
   it("returns 401 without X-API-Key", async () => {
     const res = await app.request("/v1/clients", {}, TEST_ENV);
     expect(res.status).toBe(401);

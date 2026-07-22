@@ -29,15 +29,20 @@ export async function getClientById(
 
 export async function listClients(
   db: Db,
-  opts: { limit?: number } = {}
+  opts: { limit?: number; email?: string } = {}
 ): Promise<ClientSummary[]> {
   const { google_service_account_key: _excluded, ...summaryColumns } =
     getTableColumns(clients);
 
+  const conditions = [eq(clients.active, true)];
+  if (opts.email !== undefined) {
+    conditions.push(eq(clients.email, opts.email));
+  }
+
   const query = db
     .select(summaryColumns)
     .from(clients)
-    .where(eq(clients.active, true));
+    .where(and(...conditions));
 
   const rows =
     opts.limit !== undefined
