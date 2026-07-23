@@ -1,3 +1,16 @@
+# [1.5.0](https://github.com/solsoftware-co/sol-api/compare/v1.4.1...v1.5.0) (2026-07-23)
+
+
+### Bug Fixes
+
+* merge PR workflow jobs to keep Neon branch URL in one job ([af0d092](https://github.com/solsoftware-co/sol-api/commit/af0d0926614c70a60c9b503e848be6bc65cdc6c0))
+* run integration tests for real and fix duplicate-ID 500 ([32eb8a4](https://github.com/solsoftware-co/sol-api/commit/32eb8a420d27569a26a225c2443ce9ec08c3991b))
+
+
+### Features
+
+* add persistent staging environment with production approval gate ([f509643](https://github.com/solsoftware-co/sol-api/commit/f50964356eab7b693b398f099efcf7638c619b18))
+
 ## [1.4.1](https://github.com/solsoftware-co/sol-api/compare/v1.4.0...v1.4.1) (2026-07-21)
 
 
