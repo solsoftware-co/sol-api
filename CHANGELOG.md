@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/solsoftware-co/sol-api/compare/v1.5.0...v1.5.1) (2026-07-23)
+
+
+### Bug Fixes
+
+* poll for Worker reachability instead of a fixed 30s sleep ([868dde0](https://github.com/solsoftware-co/sol-api/commit/868dde09df3e38e718aceb94de336efd87ab9a4e))
+
 # [1.5.0](https://github.com/solsoftware-co/sol-api/compare/v1.4.1...v1.5.0) (2026-07-23)
 
 
