@@ -18,3 +18,10 @@ jobs:
             exit 1
           fi
           echo "Worker deleted (status: $STATUS)"
+
+      - name: Delete PR Neon branch
+        uses: neondatabase/delete-branch-action@v3
+        with:
+          api_key: ${{ secrets.NEON_API_KEY }}
+          project_id: ${{ secrets.NEON_PROJECT_ID }}
+          branch: pr-${{ github.event.pull_request.number }}
