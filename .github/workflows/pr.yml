@@ -132,8 +132,18 @@ jobs:
           echo "${{ secrets.API_KEY_STAGING }}" | npx wrangler secret put API_KEY --name ${{ env.WORKER_NAME }}
       - name: Set PREVIEW_URL
         run: echo "PREVIEW_URL=https://${{ env.WORKER_NAME }}.${{ secrets.WORKERS_SUBDOMAIN }}.workers.dev" >> $GITHUB_ENV
-      - name: Wait for Worker cold start
-        run: sleep 30
+      - name: Wait for Worker to become reachable
+        run: |
+          for i in $(seq 1 30); do
+            status=$(curl -s -o /dev/null -w "%{http_code}" "$PREVIEW_URL/health" || echo "000")
+            if [ "$status" = "200" ]; then
+              echo "Worker reachable after $((i * 2))s"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::Worker did not become reachable within 60s (last status: $status)"
+          exit 1
       - name: Run E2E smoke tests
         run: npm run test:e2e
         env:
