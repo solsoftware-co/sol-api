@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "wrangler dev",
     "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
     "test:watch": "vitest",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "deploy": "wrangler deploy",
@@ -14,6 +16,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:studio": "drizzle-kit studio",
+    "db:branch:reset": "npx neonctl branches reset dev --parent --project-id patient-cloud-26427251",
     "prepare": "husky"
   },
   "dependencies": {

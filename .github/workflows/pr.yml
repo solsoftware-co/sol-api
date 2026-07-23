@@ -1,0 +1,175 @@
+name: PR
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  unit-test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run test:unit -- --bail=1 --reporter=verbose --reporter=json --outputFile=test-results.json
+      - name: Post unit test summary comment
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let body;
+            try {
+              const raw = JSON.parse(fs.readFileSync('test-results.json', 'utf8'));
+              const total = raw.numTotalTests ?? 0;
+              const passed = raw.numPassedTests ?? 0;
+              const failed = raw.numFailedTests ?? 0;
+              const skipped = raw.numPendingTests ?? 0;
+              const icon = failed > 0 ? '❌' : '✅';
+              let rows = '';
+              if (failed > 0 && raw.testResults) {
+                const failedSuites = raw.testResults
+                  .filter(s => s.status === 'failed')
+                  .map(s => {
+                    const name = s.testFilePath.replace(process.cwd() + '/', '');
+                    const failures = s.assertionResults
+                      .filter(r => r.status === 'failed')
+                      .map(r => `- ${r.fullName}: ${r.failureMessages.join(' | ')}`)
+                      .join('\n');
+                    return `**${name}**\n${failures}`;
+                  })
+                  .join('\n\n');
+                rows = `\n<details><summary>Failed suites</summary>\n\n${failedSuites}\n\n</details>`;
+              }
+              body = `<!-- unit-test-results -->\n## Unit Test Results ${icon}\n| Total | Passed | Failed | Skipped |\n|-------|--------|--------|---------|\n| ${total} | ${passed} | ${failed} | ${skipped} |${rows}`;
+            } catch (e) {
+              body = `<!-- unit-test-results -->\n## Unit Test Results ⚠️\nCould not read test results. Check the Actions log for details.`;
+            }
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.includes('<!-- unit-test-results -->'));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+  preview:
+    needs: unit-test
+    runs-on: ubuntu-latest
+    env:
+      WORKER_NAME: sol-api-pr-${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+
+      - name: Create Neon branch for this PR
+        id: create-branch
+        uses: neondatabase/create-branch-action@v5
+        with:
+          api_key: ${{ secrets.NEON_API_KEY }}
+          project_id: ${{ secrets.NEON_PROJECT_ID }}
+          parent: staging
+          branch_name: pr-${{ github.event.pull_request.number }}
+
+      - name: Schema drift check
+        run: |
+          npm run db:generate
+          new_sql=$(git ls-files --others --exclude-standard db/migrations/ | grep '\.sql$' || true)
+          if [ -n "$new_sql" ]; then
+            echo "::error::Uncommitted migration SQL detected — schema.ts has changes not reflected in db/migrations/. Run 'npm run db:generate' and commit the result."
+            echo "$new_sql"
+            exit 1
+          fi
+        env:
+          DATABASE_URL: postgres://placeholder/placeholder
+
+      - name: Apply migrations to PR branch
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: ${{ steps.create-branch.outputs.db_url }}
+
+      - name: Run integration tests against PR branch
+        run: npm run test:integration
+        env:
+          DATABASE_URL: ${{ steps.create-branch.outputs.db_url }}
+
+      - name: Deploy preview worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --name ${{ env.WORKER_NAME }} --var ENVIRONMENT:staging
+      - name: Set preview worker secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          echo "${{ steps.create-branch.outputs.db_url }}" | npx wrangler secret put DATABASE_URL --name ${{ env.WORKER_NAME }}
+          echo "${{ secrets.API_KEY_STAGING }}" | npx wrangler secret put API_KEY --name ${{ env.WORKER_NAME }}
+      - name: Set PREVIEW_URL
+        run: echo "PREVIEW_URL=https://${{ env.WORKER_NAME }}.${{ secrets.WORKERS_SUBDOMAIN }}.workers.dev" >> $GITHUB_ENV
+      - name: Wait for Worker cold start
+        run: sleep 30
+      - name: Run E2E smoke tests
+        run: npm run test:e2e
+        env:
+          PREVIEW_URL: ${{ env.PREVIEW_URL }}
+          API_KEY_STAGING: ${{ secrets.API_KEY_STAGING }}
+      - name: Post preview URL comment
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const url = process.env.PREVIEW_URL;
+            const success = '${{ job.status }}' !== 'failure';
+            const icon = success ? '🚀' : '❌';
+            const body = success
+              ? `<!-- preview-url -->\n## Preview Deployment ${icon}\n**URL**: ${url}\n\nE2E smoke tests passed. The preview worker is live.`
+              : `<!-- preview-url -->\n## Preview Deployment ${icon}\nDeployment, migration, integration tests, or E2E tests failed. Check the [Actions log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.`;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.includes('<!-- preview-url -->'));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+        env:
+          PREVIEW_URL: ${{ env.PREVIEW_URL }}

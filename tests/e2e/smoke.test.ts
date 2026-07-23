@@ -26,4 +26,18 @@ describe.skipIf(skip)("E2E smoke tests", () => {
     const body = await res.json() as any;
     expect(body.success).toBe(true);
   });
+
+  it("GET /v1/notification-logs without API key returns 401", async () => {
+    const res = await fetch(`${PREVIEW_URL}/v1/notification-logs`);
+    expect(res.status).toBe(401);
+  });
+
+  it("GET /v1/notification-logs with valid API key returns 200", async () => {
+    const res = await fetch(`${PREVIEW_URL}/v1/notification-logs`, {
+      headers: { "X-API-Key": API_KEY! },
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.success).toBe(true);
+  });
 });
