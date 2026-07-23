@@ -34,22 +34,27 @@ wrangler secret put API_KEY
 
 **Stack**: Hono 4.x → Cloudflare Workers (V8 isolate) → Neon PostgreSQL (existing `clients` table from `sol-notification-service`)
 
-This API centralizes client data access so consuming services (notification service, future MCP agents) don't hold direct database connections. It exposes five endpoints behind a shared API key.
+This API centralizes client data access so consuming services (notification service, future MCP agents) don't hold direct database connections. It exposes client-management endpoints and notification-log tracking endpoints behind a shared API key.
 
-### Source layout (planned)
+### Source layout
 
 ```
 src/
-├── index.ts              # Hono app entry + CF Worker fetch export
+├── index.ts                    # Hono app entry + CF Worker fetch export
 ├── routes/
-│   ├── health.ts         # GET /health (no auth)
-│   └── clients.ts        # GET /v1/clients, GET /v1/clients/:id, POST, PATCH
+│   ├── health.ts                # GET /health (no auth)
+│   ├── clients.ts               # GET /v1/clients, GET /v1/clients/:id, POST, PATCH
+│   └── notification-logs.ts     # GET /v1/notification-logs, GET /v1/notification-logs/:id, POST
 ├── middleware/
-│   ├── auth.ts           # X-API-Key enforcement via HTTPException
-│   └── error.ts          # Global handler → envelope shape
-├── lib/db.ts             # neon() factory (fetch transport, no ws)
-├── types/index.ts        # Env bindings, ErrorCode enum, ApiResponse<T>
-└── validators/client.ts  # Zod schemas for create + update payloads
+│   ├── auth.ts                  # X-API-Key enforcement via HTTPException
+│   └── error.ts                 # Global handler → envelope shape
+├── lib/
+│   ├── db.ts                    # neon() factory (fetch transport, no ws)
+│   └── schema.ts                # Drizzle table definitions (clients, notification_logs)
+├── types/index.ts               # Env bindings, ErrorCode enum, ApiResponse<T>
+└── validators/
+    ├── client.ts                 # Zod schemas for create + update payloads
+    └── notification-log.ts       # Zod schema for create payload
 ```
 
 ### Neon connection pattern
@@ -98,6 +103,10 @@ export const requireApiKey = createMiddleware(async (c, next) => {
 ### Testing
 
 Tests run inside the actual CF Workers runtime via `@cloudflare/vitest-pool-workers`. Call routes via `app.request(req, {}, envBindings)` — no HTTP server needed, no CF API mocking. Integration tests live in `tests/integration/`; Zod schema unit tests in `tests/unit/validators/`.
+
+Integration tests need a live `DATABASE_URL` exposed via the `cloudflare:test` module's `env` export (bridged from `process.env.DATABASE_URL` in `vitest.config.ts`'s `miniflare.bindings`) — not `process.env` directly, since test files run inside a workerd isolate. Without it set, DB-backed assertions skip via a `skipIfNoDb` guard rather than fail.
+
+End-to-end smoke tests against a live deployed Worker live in `tests/e2e/` (`vitest.e2e.config.ts`, run via `npm run test:e2e`), gated on `PREVIEW_URL` — they run last, after PR preview deploys and after staging/production releases, and are deliberately shallow (auth + one representative request per resource), not a re-test of business logic.
 
 ## Specs reference
 

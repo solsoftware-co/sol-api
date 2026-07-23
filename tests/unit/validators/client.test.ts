@@ -24,7 +24,44 @@ describe("createClientSchema", () => {
       settings: { banner: { imageUrl: "https://example.com/img.png" } },
       google_service_account_email: "sa@project.iam.gserviceaccount.com",
       google_service_account_key: "-----BEGIN PRIVATE KEY-----\n...",
+      sanity_project_id: "abc123",
+      sanity_production_dataset: "production",
+      sanity_staging_dataset: "staging",
+      github_repo: "solsoftware-co/acme-corp",
+      github_default_branch: "main",
+      github_test_branch: "develop",
+      default_email: "billing@acme.com",
     });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.default_email).toBe("billing@acme.com");
+      expect(result.data.github_test_branch).toBe("develop");
+    }
+  });
+
+  it("defaults github_default_branch to 'main' when omitted", () => {
+    const result = createClientSchema.safeParse(valid);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.github_default_branch).toBe("main");
+    }
+  });
+
+  it("rejects a default_email without @", () => {
+    const result = createClientSchema.safeParse({ ...valid, default_email: "notanemail" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a google_service_account_email without @", () => {
+    const result = createClientSchema.safeParse({
+      ...valid,
+      google_service_account_email: "notanemail",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts a null default_email", () => {
+    const result = createClientSchema.safeParse({ ...valid, default_email: null });
     expect(result.success).toBe(true);
   });
 
@@ -93,5 +130,28 @@ describe("updateClientSchema", () => {
   it("rejects an email without @", () => {
     const result = updateClientSchema.safeParse({ email: "notvalid" });
     expect(result.success).toBe(false);
+  });
+
+  it("accepts a default_email update", () => {
+    const result = updateClientSchema.safeParse({ default_email: "new-billing@acme.com" });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a default_email without @", () => {
+    const result = updateClientSchema.safeParse({ default_email: "notanemail" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a google_service_account_email without @", () => {
+    const result = updateClientSchema.safeParse({ google_service_account_email: "notanemail" });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts sanity and github field updates", () => {
+    const result = updateClientSchema.safeParse({
+      sanity_project_id: "abc123",
+      github_repo: "solsoftware-co/acme-corp",
+    });
+    expect(result.success).toBe(true);
   });
 });
