@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "wrangler dev",
     "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
     "test:watch": "vitest",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "deploy": "wrangler deploy",

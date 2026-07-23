@@ -6,6 +6,11 @@ export default defineWorkersConfig({
     poolOptions: {
       workers: {
         wrangler: { configPath: "./wrangler.toml" },
+        miniflare: {
+          bindings: {
+            DATABASE_URL: process.env.DATABASE_URL ?? "",
+          },
+        },
       },
     },
   },

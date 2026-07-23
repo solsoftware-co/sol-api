@@ -54,6 +54,23 @@ export class ConflictError extends Error {
   }
 }
 
+function pgErrorCode(err: unknown): string | undefined {
+  if (!err || typeof err !== "object") return undefined;
+  if ("code" in err && typeof (err as { code: unknown }).code === "string") {
+    return (err as { code: string }).code;
+  }
+  const cause = (err as { cause?: unknown }).cause;
+  if (
+    cause &&
+    typeof cause === "object" &&
+    "code" in cause &&
+    typeof (cause as { code: unknown }).code === "string"
+  ) {
+    return (cause as { code: string }).code;
+  }
+  return undefined;
+}
+
 export async function insertClient(
   db: Db,
   data: {
@@ -97,12 +114,7 @@ export async function insertClient(
       .returning();
     return rows[0] as ClientRecord;
   } catch (err: unknown) {
-    if (
-      err &&
-      typeof err === "object" &&
-      "code" in err &&
-      (err as { code: string }).code === "23505"
-    ) {
+    if (pgErrorCode(err) === "23505") {
       throw new ConflictError(`Client already exists: ${data.id}`);
     }
     throw err;
@@ -179,11 +191,8 @@ export async function insertNotificationLog(
       .returning();
     return rows[0] as NotificationLog;
   } catch (err: unknown) {
-    if (err && typeof err === "object" && "code" in err) {
-      const code = (err as { code: string }).code;
-      if (code === "23503") {
-        throw new ForeignKeyError(`Client not found: ${data.client_id}`);
-      }
+    if (pgErrorCode(err) === "23503") {
+      throw new ForeignKeyError(`Client not found: ${data.client_id}`);
     }
     throw err;
   }

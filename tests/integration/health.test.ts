@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
+import { env } from "cloudflare:test";
 import app from "../../src/index.js";
+import type { Env } from "../../src/types/index.js";
 
 const BASE_ENV = {
   API_KEY: "test-api-key",
@@ -29,7 +31,7 @@ describe("GET /health", () => {
   });
 
   it("includes environment in response shape on success", async () => {
-    const dbUrl = process.env.DATABASE_URL;
+    const dbUrl = (env as unknown as Env).DATABASE_URL;
     if (!dbUrl) {
       console.warn("Skipping DB-connected health test: DATABASE_URL not set");
       return;

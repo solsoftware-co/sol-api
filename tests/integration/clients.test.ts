@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { env } from "cloudflare:test";
 import { neon } from "@neondatabase/serverless";
 import app from "../../src/index.js";
+import type { Env } from "../../src/types/index.js";
 
-const DB_URL = process.env.DATABASE_URL;
+const DB_URL = (env as unknown as Env).DATABASE_URL;
 const API_KEY = "test-api-key";
 
 const TEST_ENV = {

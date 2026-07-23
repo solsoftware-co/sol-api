@@ -8,7 +8,74 @@ permissions:
   pull-requests: write
 
 jobs:
+  unit-test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run test:unit -- --bail=1 --reporter=verbose --reporter=json --outputFile=test-results.json
+      - name: Post unit test summary comment
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let body;
+            try {
+              const raw = JSON.parse(fs.readFileSync('test-results.json', 'utf8'));
+              const total = raw.numTotalTests ?? 0;
+              const passed = raw.numPassedTests ?? 0;
+              const failed = raw.numFailedTests ?? 0;
+              const skipped = raw.numPendingTests ?? 0;
+              const icon = failed > 0 ? '❌' : '✅';
+              let rows = '';
+              if (failed > 0 && raw.testResults) {
+                const failedSuites = raw.testResults
+                  .filter(s => s.status === 'failed')
+                  .map(s => {
+                    const name = s.testFilePath.replace(process.cwd() + '/', '');
+                    const failures = s.assertionResults
+                      .filter(r => r.status === 'failed')
+                      .map(r => `- ${r.fullName}: ${r.failureMessages.join(' | ')}`)
+                      .join('\n');
+                    return `**${name}**\n${failures}`;
+                  })
+                  .join('\n\n');
+                rows = `\n<details><summary>Failed suites</summary>\n\n${failedSuites}\n\n</details>`;
+              }
+              body = `<!-- unit-test-results -->\n## Unit Test Results ${icon}\n| Total | Passed | Failed | Skipped |\n|-------|--------|--------|---------|\n| ${total} | ${passed} | ${failed} | ${skipped} |${rows}`;
+            } catch (e) {
+              body = `<!-- unit-test-results -->\n## Unit Test Results ⚠️\nCould not read test results. Check the Actions log for details.`;
+            }
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.includes('<!-- unit-test-results -->'));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
   preview:
+    needs: unit-test
     runs-on: ubuntu-latest
     env:
       WORKER_NAME: sol-api-pr-${{ github.event.pull_request.number }}
@@ -46,6 +113,11 @@ jobs:
         env:
           DATABASE_URL: ${{ steps.create-branch.outputs.db_url }}
 
+      - name: Run integration tests against PR branch
+        run: npm run test:integration
+        env:
+          DATABASE_URL: ${{ steps.create-branch.outputs.db_url }}
+
       - name: Deploy preview worker
         uses: cloudflare/wrangler-action@v3
         with:
@@ -77,7 +149,7 @@ jobs:
             const icon = success ? '🚀' : '❌';
             const body = success
               ? `<!-- preview-url -->\n## Preview Deployment ${icon}\n**URL**: ${url}\n\nE2E smoke tests passed. The preview worker is live.`
-              : `<!-- preview-url -->\n## Preview Deployment ${icon}\nDeployment or E2E tests failed. Check the [Actions log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.`;
+              : `<!-- preview-url -->\n## Preview Deployment ${icon}\nDeployment, migration, integration tests, or E2E tests failed. Check the [Actions log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.`;
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -101,71 +173,3 @@ jobs:
             }
         env:
           PREVIEW_URL: ${{ env.PREVIEW_URL }}
-
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm test -- --bail=1 --reporter=verbose --reporter=json --outputFile=test-results.json
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          API_KEY: ${{ secrets.API_KEY }}
-      - name: Post test summary comment
-        if: always()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            let body;
-            try {
-              const raw = JSON.parse(fs.readFileSync('test-results.json', 'utf8'));
-              const total = raw.numTotalTests ?? 0;
-              const passed = raw.numPassedTests ?? 0;
-              const failed = raw.numFailedTests ?? 0;
-              const skipped = raw.numPendingTests ?? 0;
-              const icon = failed > 0 ? '❌' : '✅';
-              let rows = '';
-              if (failed > 0 && raw.testResults) {
-                const failedSuites = raw.testResults
-                  .filter(s => s.status === 'failed')
-                  .map(s => {
-                    const name = s.testFilePath.replace(process.cwd() + '/', '');
-                    const failures = s.assertionResults
-                      .filter(r => r.status === 'failed')
-                      .map(r => `- ${r.fullName}: ${r.failureMessages.join(' | ')}`)
-                      .join('\n');
-                    return `**${name}**\n${failures}`;
-                  })
-                  .join('\n\n');
-                rows = `\n<details><summary>Failed suites</summary>\n\n${failedSuites}\n\n</details>`;
-              }
-              body = `<!-- test-results -->\n## Test Results ${icon}\n| Total | Passed | Failed | Skipped |\n|-------|--------|--------|---------|\n| ${total} | ${passed} | ${failed} | ${skipped} |${rows}`;
-            } catch (e) {
-              body = `<!-- test-results -->\n## Test Results ⚠️\nCould not read test results. Check the Actions log for details.`;
-            }
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            const existing = comments.find(c => c.body.includes('<!-- test-results -->'));
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body,
-              });
-            }
