@@ -8,11 +8,18 @@ permissions:
   pull-requests: write
 
 jobs:
-  create-db-branch:
+  preview:
     runs-on: ubuntu-latest
-    outputs:
-      db_url: ${{ steps.create-branch.outputs.db_url }}
+    env:
+      WORKER_NAME: sol-api-pr-${{ github.event.pull_request.number }}
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+
       - name: Create Neon branch for this PR
         id: create-branch
         uses: neondatabase/create-branch-action@v5
@@ -21,18 +28,6 @@ jobs:
           project_id: ${{ secrets.NEON_PROJECT_ID }}
           parent: staging
           branch_name: pr-${{ github.event.pull_request.number }}
-
-  migration-check:
-    name: Migration check
-    needs: create-db-branch
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
 
       - name: Schema drift check
         run: |
@@ -49,20 +44,8 @@ jobs:
       - name: Apply migrations to PR branch
         run: npm run db:migrate
         env:
-          DATABASE_URL: ${{ needs.create-db-branch.outputs.db_url }}
+          DATABASE_URL: ${{ steps.create-branch.outputs.db_url }}
 
-  deploy-preview:
-    needs: [create-db-branch, migration-check]
-    runs-on: ubuntu-latest
-    env:
-      WORKER_NAME: sol-api-pr-${{ github.event.pull_request.number }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
       - name: Deploy preview worker
         uses: cloudflare/wrangler-action@v3
         with:
@@ -73,7 +56,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
-          echo "${{ needs.create-db-branch.outputs.db_url }}" | npx wrangler secret put DATABASE_URL --name ${{ env.WORKER_NAME }}
+          echo "${{ steps.create-branch.outputs.db_url }}" | npx wrangler secret put DATABASE_URL --name ${{ env.WORKER_NAME }}
           echo "${{ secrets.API_KEY_STAGING }}" | npx wrangler secret put API_KEY --name ${{ env.WORKER_NAME }}
       - name: Set PREVIEW_URL
         run: echo "PREVIEW_URL=https://${{ env.WORKER_NAME }}.${{ secrets.WORKERS_SUBDOMAIN }}.workers.dev" >> $GITHUB_ENV
