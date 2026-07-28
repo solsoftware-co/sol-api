@@ -8,6 +8,7 @@ import {
 } from "../lib/db.js";
 import { ErrorCode, type AppEnv } from "../types/index.js";
 import { createNotificationLogSchema } from "../validators/notification-log.js";
+import { logger } from "../lib/logger.js";
 
 const notificationLogs = new Hono<AppEnv>();
 
@@ -59,6 +60,14 @@ notificationLogs.get("/", async (c) => {
 
   const db = createDb(c.env.DATABASE_URL);
   const rows = await listNotificationLogs(db, { client_id, from, to, limit });
+  logger.info("listed notification logs", {
+    requestId: c.get("requestId"),
+    count: rows.length,
+    clientId: client_id,
+    from,
+    to,
+    limit,
+  });
   return c.json({ success: true, data: rows });
 });
 
@@ -119,6 +128,14 @@ notificationLogs.post("/", async (c) => {
   try {
     const db = createDb(c.env.DATABASE_URL);
     const log = await insertNotificationLog(db, result.data);
+    logger.info("created notification log", {
+      requestId: c.get("requestId"),
+      logId: log.id,
+      clientId: log.client_id,
+      workflow: log.workflow,
+      eventName: log.event_name,
+      outcome: log.outcome,
+    });
     return c.json({ success: true, data: log }, 201);
   } catch (err) {
     if (err instanceof ForeignKeyError) {

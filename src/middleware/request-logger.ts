@@ -11,11 +11,19 @@ export const requestLogger = createMiddleware<AppEnv>(async (c, next) => {
   const durationMs = Date.now() - start;
 
   c.res.headers.set("X-Request-Id", requestId);
+
+  const cf = (c.req.raw as Request & { cf?: { colo?: string; country?: string } })
+    .cf;
+
   logger.info("request completed", {
     requestId,
     method: c.req.method,
     path: c.req.path,
+    query: c.req.query(),
     status: c.res.status,
     durationMs,
+    userAgent: c.req.header("User-Agent"),
+    colo: cf?.colo,
+    country: cf?.country,
   });
 });
