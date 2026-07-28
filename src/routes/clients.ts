@@ -7,10 +7,10 @@ import {
   updateClient,
   ConflictError,
 } from "../lib/db.js";
-import { ErrorCode, type Env } from "../types/index.js";
+import { ErrorCode, type AppEnv } from "../types/index.js";
 import { createClientSchema, updateClientSchema } from "../validators/client.js";
 
-const clients = new Hono<{ Bindings: Env }>();
+const clients = new Hono<AppEnv>();
 
 clients.get("/", async (c) => {
   const limitParam = c.req.query("limit");

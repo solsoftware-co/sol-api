@@ -6,10 +6,10 @@ import {
   insertNotificationLog,
   ForeignKeyError,
 } from "../lib/db.js";
-import { ErrorCode, type Env } from "../types/index.js";
+import { ErrorCode, type AppEnv } from "../types/index.js";
 import { createNotificationLogSchema } from "../validators/notification-log.js";
 
-const notificationLogs = new Hono<{ Bindings: Env }>();
+const notificationLogs = new Hono<AppEnv>();
 
 notificationLogs.get("/", async (c) => {
   const { client_id, from, to, limit: limitParam } = c.req.query();

@@ -1,8 +1,9 @@
 import { Hono } from "hono";
 import { createDb, healthCheck } from "../lib/db.js";
-import { ErrorCode, type Env } from "../types/index.js";
+import { ErrorCode, type AppEnv } from "../types/index.js";
+import { logger } from "../lib/logger.js";
 
-const health = new Hono<{ Bindings: Env }>();
+const health = new Hono<AppEnv>();
 
 health.get("/", async (c) => {
   try {
@@ -17,6 +18,11 @@ health.get("/", async (c) => {
       },
     });
   } catch (err) {
+    logger.warn("health check failed: database unreachable", {
+      requestId: c.get("requestId"),
+      environment: c.env.ENVIRONMENT,
+      errorMessage: err instanceof Error ? err.message : String(err),
+    });
     return c.json(
       {
         success: false,
