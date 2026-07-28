@@ -11,14 +11,23 @@ port = 8787
 ENVIRONMENT = "development"
 # SANITY_API_TOKEN and GITHUB_TOKEN are Cloudflare Secrets — not set here
 
+[observability]
+enabled = true
+
 [env.staging]
 name = "sol-api-staging"
 
 [env.staging.vars]
 ENVIRONMENT = "staging"
 
+[env.staging.observability]
+enabled = true
+
 [env.production]
 name = "sol-api"
 
 [env.production.vars]
 ENVIRONMENT = "production"
+
+[env.production.observability]
+enabled = true

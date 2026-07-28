@@ -6,6 +6,11 @@ export interface Env {
   GITHUB_TOKEN: string;
 }
 
+export type AppEnv = {
+  Bindings: Env;
+  Variables: { requestId: string };
+};
+
 export enum ErrorCode {
   UNAUTHORIZED = "UNAUTHORIZED",
   NOT_FOUND = "NOT_FOUND",

@@ -7,10 +7,11 @@ import {
   updateClient,
   ConflictError,
 } from "../lib/db.js";
-import { ErrorCode, type Env } from "../types/index.js";
+import { ErrorCode, type AppEnv } from "../types/index.js";
 import { createClientSchema, updateClientSchema } from "../validators/client.js";
+import { logger } from "../lib/logger.js";
 
-const clients = new Hono<{ Bindings: Env }>();
+const clients = new Hono<AppEnv>();
 
 clients.get("/", async (c) => {
   const limitParam = c.req.query("limit");
@@ -33,6 +34,11 @@ clients.get("/", async (c) => {
 
   const db = createDb(c.env.DATABASE_URL);
   const rows = await listClients(db, { limit });
+  logger.info("listed clients", {
+    requestId: c.get("requestId"),
+    count: rows.length,
+    limit,
+  });
   return c.json({ success: true, data: rows });
 });
 
@@ -79,6 +85,10 @@ clients.post("/", async (c) => {
   try {
     const db = createDb(c.env.DATABASE_URL);
     const client = await insertClient(db, result.data);
+    logger.info("created client", {
+      requestId: c.get("requestId"),
+      clientId: client.id,
+    });
     return c.json({ success: true, data: client }, 201);
   } catch (err) {
     if (err instanceof ConflictError) {
@@ -134,6 +144,11 @@ clients.patch("/:id", async (c) => {
     );
   }
 
+  logger.info("updated client", {
+    requestId: c.get("requestId"),
+    clientId: id,
+    fields: Object.keys(result.data),
+  });
   return c.json({ success: true, data: updated });
 });
 
