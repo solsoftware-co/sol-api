@@ -1,3 +1,11 @@
+# [1.6.0](https://github.com/solsoftware-co/sol-api/compare/v1.5.1...v1.6.0) (2026-07-28)
+
+
+### Features
+
+* add structured logging, request tracing, and Workers Logs ([fbb1d59](https://github.com/solsoftware-co/sol-api/commit/fbb1d59ed88e829ea81a71c0d296ee54a596a367))
+* enrich request logs with context and add business-event logging ([19fa714](https://github.com/solsoftware-co/sol-api/commit/19fa714f8ac3137f7591f60aea8f749448abc3cf))
+
 ## [1.5.1](https://github.com/solsoftware-co/sol-api/compare/v1.5.0...v1.5.1) (2026-07-23)
 
 
