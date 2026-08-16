@@ -80,7 +80,7 @@ Error codes: `UNAUTHORIZED`, `NOT_FOUND`, `VALIDATION_ERROR`, `CONFLICT`, `INTER
 
 ### Key data rules
 
-- `google_service_account_key` is **excluded from SQL queries by default** for both `GET /v1/clients` (list) and `GET /v1/clients/:id` — strip it at the query level, not in application code. The single-record endpoint includes it only when called with `?include=google_credentials`.
+- Per-client credentials (`google_service_account_key`, `slack_webhook_url`) are **excluded from SQL queries by default** for both `GET /v1/clients` (list) and `GET /v1/clients/:id` — strip them at the query level, not in application code. The single-record endpoint includes each one independently via `?include=google_credentials` and/or `?include=slack_credentials` (comma-separated to request both) — requesting one never implies the other. Any future per-client secret should follow the same pattern: its own `?include=` value, never folded into a generic "credentials" flag.
 - Inactive clients (`active = false`) are treated as not found on single-record lookups and excluded from list responses.
 - Client IDs are human-assigned slugs (e.g. `acme-corp`), not UUIDs.
 - Supported timezones: `America/New_York`, `America/Chicago`, `America/Denver`, `America/Los_Angeles`.

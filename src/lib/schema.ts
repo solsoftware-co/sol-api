@@ -26,6 +26,7 @@ export const clients = pgTable("clients", {
   github_default_branch: text("github_default_branch").default("main"),
   github_test_branch: text("github_test_branch"),
   default_email: text("default_email"),
+  slack_webhook_url: text("slack_webhook_url"),
 });
 
 export const notification_logs = pgTable("notification_logs", {

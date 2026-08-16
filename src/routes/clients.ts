@@ -45,8 +45,13 @@ clients.get("/", async (c) => {
 clients.get("/:id", async (c) => {
   const db = createDb(c.env.DATABASE_URL);
   const id = c.req.param("id");
-  const includeGoogleCredentials = c.req.query("include") === "google_credentials";
-  const client = await getClientById(db, id, { includeGoogleCredentials });
+  const include = new Set(
+    (c.req.query("include") ?? "").split(",").map((v) => v.trim()).filter(Boolean)
+  );
+  const client = await getClientById(db, id, {
+    includeGoogleCredentials: include.has("google_credentials"),
+    includeSlackCredentials: include.has("slack_credentials"),
+  });
 
   if (!client) {
     return c.json(
