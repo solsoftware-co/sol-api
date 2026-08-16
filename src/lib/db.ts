@@ -17,14 +17,27 @@ export async function healthCheck(db: Db): Promise<void> {
 
 export async function getClientById(
   db: Db,
-  id: string
-): Promise<ClientRecord | null> {
+  id: string,
+  opts: { includeCredentials?: boolean } = {}
+): Promise<ClientRecord | ClientSummary | null> {
+  if (opts.includeCredentials) {
+    const rows = await db
+      .select()
+      .from(clients)
+      .where(and(eq(clients.id, id), eq(clients.active, true)))
+      .limit(1);
+    return (rows[0] as ClientRecord) ?? null;
+  }
+
+  const { google_service_account_key: _excluded, ...summaryColumns } =
+    getTableColumns(clients);
+
   const rows = await db
-    .select()
+    .select(summaryColumns)
     .from(clients)
     .where(and(eq(clients.id, id), eq(clients.active, true)))
     .limit(1);
-  return (rows[0] as ClientRecord) ?? null;
+  return (rows[0] as ClientSummary) ?? null;
 }
 
 export async function listClients(

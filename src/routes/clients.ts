@@ -45,7 +45,8 @@ clients.get("/", async (c) => {
 clients.get("/:id", async (c) => {
   const db = createDb(c.env.DATABASE_URL);
   const id = c.req.param("id");
-  const client = await getClientById(db, id);
+  const includeCredentials = c.req.query("include") === "credentials";
+  const client = await getClientById(db, id, { includeCredentials });
 
   if (!client) {
     return c.json(
