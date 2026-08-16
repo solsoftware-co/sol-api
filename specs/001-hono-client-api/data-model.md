@@ -20,12 +20,13 @@ The API is a read/write layer over the existing Neon PostgreSQL schema owned by 
 | settings | JSONB | No | Open-ended config blob (banner, recipients, etc.) |
 | timezone | TEXT | No | One of 4 supported US timezones; default `America/Chicago` |
 | google_service_account_email | TEXT | Yes | GSA email for Sheets integration |
-| google_service_account_key | TEXT | Yes | Returned only on single-record lookups (`GET /v1/clients/:id`); excluded from list responses |
+| google_service_account_key | TEXT | Yes | Excluded from all responses by default; included on `GET /v1/clients/:id` only with `?include=google_credentials` |
+| slack_webhook_url | TEXT | Yes | Excluded from all responses by default; included on `GET /v1/clients/:id` only with `?include=slack_credentials` |
 | created_at | TIMESTAMPTZ | No | Auto-set on insert |
 
 ### API response shapes
 
-**ClientRecord** — returned from `GET /v1/clients/:id` (single-record lookup)
+**ClientRecord** — full row shape; never returned as-is except when both `?include=` values are requested together on `GET /v1/clients/:id`
 ```typescript
 interface ClientRecord {
   id: string;
@@ -36,12 +37,13 @@ interface ClientRecord {
   settings: Record<string, unknown>;
   timezone: "America/New_York" | "America/Chicago" | "America/Denver" | "America/Los_Angeles";
   google_service_account_email: string | null;
-  google_service_account_key: string | null; // included — required by consuming services
+  google_service_account_key: string | null;
+  slack_webhook_url: string | null;
   created_at: string; // ISO 8601
 }
 ```
 
-**ClientSummary** — returned from `GET /v1/clients` (list)
+**ClientSummary** — returned from `GET /v1/clients` (list), and the default response from `GET /v1/clients/:id`
 ```typescript
 interface ClientSummary {
   id: string;
@@ -52,9 +54,15 @@ interface ClientSummary {
   settings: Record<string, unknown>;
   timezone: "America/New_York" | "America/Chicago" | "America/Denver" | "America/Los_Angeles";
   google_service_account_email: string | null;
-  // google_service_account_key intentionally absent — not needed for fan-out scheduling
+  // google_service_account_key, slack_webhook_url intentionally absent — see ClientWithCredentials
   created_at: string; // ISO 8601
 }
+```
+
+**ClientWithCredentials** — `ClientSummary` plus whichever credential fields were requested via `?include=` on `GET /v1/clients/:id`; each is independently optional
+```typescript
+type ClientWithCredentials = ClientSummary &
+  Partial<Pick<ClientRecord, "google_service_account_key" | "slack_webhook_url">>;
 ```
 
 ### Validation rules (create / update)
@@ -68,7 +76,8 @@ interface ClientSummary {
 | active | Boolean only |
 | settings | Any valid JSON object |
 | google_service_account_email | Optional; when provided must contain `@` |
-| google_service_account_key | Accepted on create/update (stored encrypted); never returned |
+| google_service_account_key | Accepted on create/update; excluded from responses unless `?include=google_credentials` |
+| slack_webhook_url | Optional; when provided must be a valid URL; excluded from responses unless `?include=slack_credentials` |
 
 ### State transitions
 

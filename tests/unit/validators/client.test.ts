@@ -31,12 +31,24 @@ describe("createClientSchema", () => {
       github_default_branch: "main",
       github_test_branch: "develop",
       default_email: "billing@acme.com",
+      slack_webhook_url: "https://hooks.slack.com/services/T000/B000/XXXX",
     });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.default_email).toBe("billing@acme.com");
       expect(result.data.github_test_branch).toBe("develop");
+      expect(result.data.slack_webhook_url).toBe("https://hooks.slack.com/services/T000/B000/XXXX");
     }
+  });
+
+  it("rejects a slack_webhook_url that isn't a valid URL", () => {
+    const result = createClientSchema.safeParse({ ...valid, slack_webhook_url: "not-a-url" });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts a null slack_webhook_url", () => {
+    const result = createClientSchema.safeParse({ ...valid, slack_webhook_url: null });
+    expect(result.success).toBe(true);
   });
 
   it("defaults github_default_branch to 'main' when omitted", () => {
@@ -153,5 +165,17 @@ describe("updateClientSchema", () => {
       github_repo: "solsoftware-co/acme-corp",
     });
     expect(result.success).toBe(true);
+  });
+
+  it("accepts a slack_webhook_url update", () => {
+    const result = updateClientSchema.safeParse({
+      slack_webhook_url: "https://hooks.slack.com/services/T000/B000/XXXX",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a slack_webhook_url that isn't a valid URL", () => {
+    const result = updateClientSchema.safeParse({ slack_webhook_url: "not-a-url" });
+    expect(result.success).toBe(false);
   });
 });

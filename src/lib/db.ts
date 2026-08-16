@@ -3,7 +3,7 @@ import { drizzle } from "drizzle-orm/neon-http";
 import { eq, and, gte, lte, desc, getTableColumns } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 import { clients, notification_logs } from "./schema.js";
-import type { ClientRecord, ClientSummary, NotificationLog } from "../types/index.js";
+import type { ClientRecord, ClientSummary, ClientWithCredentials, NotificationLog } from "../types/index.js";
 
 export type Db = ReturnType<typeof drizzle>;
 
@@ -18,34 +18,34 @@ export async function healthCheck(db: Db): Promise<void> {
 export async function getClientById(
   db: Db,
   id: string,
-  opts: { includeGoogleCredentials?: boolean } = {}
-): Promise<ClientRecord | ClientSummary | null> {
-  if (opts.includeGoogleCredentials) {
-    const rows = await db
-      .select()
-      .from(clients)
-      .where(and(eq(clients.id, id), eq(clients.active, true)))
-      .limit(1);
-    return (rows[0] as ClientRecord) ?? null;
-  }
-
-  const { google_service_account_key: _excluded, ...summaryColumns } =
+  opts: { includeGoogleCredentials?: boolean; includeSlackCredentials?: boolean } = {}
+): Promise<ClientWithCredentials | null> {
+  const { google_service_account_key, slack_webhook_url, ...summaryColumns } =
     getTableColumns(clients);
 
+  const columns = {
+    ...summaryColumns,
+    ...(opts.includeGoogleCredentials ? { google_service_account_key } : {}),
+    ...(opts.includeSlackCredentials ? { slack_webhook_url } : {}),
+  };
+
   const rows = await db
-    .select(summaryColumns)
+    .select(columns)
     .from(clients)
     .where(and(eq(clients.id, id), eq(clients.active, true)))
     .limit(1);
-  return (rows[0] as ClientSummary) ?? null;
+  return (rows[0] as ClientWithCredentials) ?? null;
 }
 
 export async function listClients(
   db: Db,
   opts: { limit?: number } = {}
 ): Promise<ClientSummary[]> {
-  const { google_service_account_key: _excluded, ...summaryColumns } =
-    getTableColumns(clients);
+  const {
+    google_service_account_key: _excludedGoogleKey,
+    slack_webhook_url: _excludedSlackUrl,
+    ...summaryColumns
+  } = getTableColumns(clients);
 
   const query = db
     .select(summaryColumns)
@@ -102,6 +102,7 @@ export async function insertClient(
     github_default_branch?: string | null;
     github_test_branch?: string | null;
     default_email?: string | null;
+    slack_webhook_url?: string | null;
   }
 ): Promise<ClientRecord> {
   try {
@@ -123,6 +124,7 @@ export async function insertClient(
         github_default_branch: data.github_default_branch ?? "main",
         github_test_branch: data.github_test_branch ?? null,
         default_email: data.default_email ?? null,
+        slack_webhook_url: data.slack_webhook_url ?? null,
       })
       .returning();
     return rows[0] as ClientRecord;
@@ -227,6 +229,7 @@ const UPDATABLE_COLUMNS = new Set([
   "github_default_branch",
   "github_test_branch",
   "default_email",
+  "slack_webhook_url",
 ]);
 
 export async function updateClient(

@@ -37,6 +37,7 @@ export const createClientSchema = z.object({
     .includes("@", { message: "default_email must contain @" })
     .nullable()
     .optional(),
+  slack_webhook_url: z.string().url().nullable().optional(),
 });
 
 export const updateClientSchema = z
@@ -67,6 +68,7 @@ export const updateClientSchema = z
       .includes("@", { message: "default_email must contain @" })
       .nullable()
       .optional(),
+    slack_webhook_url: z.string().url().nullable().optional(),
   })
   .refine(
     (data) => Object.keys(data).length > 0,

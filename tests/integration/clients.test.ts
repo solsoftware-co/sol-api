@@ -27,10 +27,10 @@ beforeAll(async () => {
   if (!DB_URL) return;
   const sql = neon(DB_URL);
   await sql`
-    INSERT INTO clients (id, name, email, active, settings, timezone)
+    INSERT INTO clients (id, name, email, active, settings, timezone, slack_webhook_url)
     VALUES
-      (${TEST_CLIENT_ID}, 'Test Client', 'test@example.com', TRUE, '{}', 'America/Chicago'),
-      (${TEST_CLIENT_ID_2}, 'Inactive Client', 'inactive@example.com', FALSE, '{}', 'America/Chicago')
+      (${TEST_CLIENT_ID}, 'Test Client', 'test@example.com', TRUE, '{}', 'America/Chicago', 'https://hooks.slack.com/services/T000/B000/XXXX'),
+      (${TEST_CLIENT_ID_2}, 'Inactive Client', 'inactive@example.com', FALSE, '{}', 'America/Chicago', NULL)
     ON CONFLICT (id) DO NOTHING
   `;
 });
@@ -67,6 +67,7 @@ describe("GET /v1/clients/:id", () => {
       expect(body.success).toBe(true);
       expect(body.data.id).toBe(TEST_CLIENT_ID);
       expect("google_service_account_key" in body.data).toBe(false);
+      expect("slack_webhook_url" in body.data).toBe(false);
     })
   );
 
@@ -83,6 +84,37 @@ describe("GET /v1/clients/:id", () => {
       expect(body.success).toBe(true);
       expect(body.data.id).toBe(TEST_CLIENT_ID);
       expect("google_service_account_key" in body.data).toBe(true);
+      expect("slack_webhook_url" in body.data).toBe(false);
+    })
+  );
+
+  it(
+    "returns 200 with only the Slack credential when ?include=slack_credentials",
+    skipIfNoDb(async () => {
+      const res = await app.request(
+        `/v1/clients/${TEST_CLIENT_ID}?include=slack_credentials`,
+        authed(),
+        TEST_ENV
+      );
+      expect(res.status).toBe(200);
+      const body = await res.json() as any;
+      expect(body.data.slack_webhook_url).toBe("https://hooks.slack.com/services/T000/B000/XXXX");
+      expect("google_service_account_key" in body.data).toBe(false);
+    })
+  );
+
+  it(
+    "returns 200 with both credentials when ?include=google_credentials,slack_credentials",
+    skipIfNoDb(async () => {
+      const res = await app.request(
+        `/v1/clients/${TEST_CLIENT_ID}?include=google_credentials,slack_credentials`,
+        authed(),
+        TEST_ENV
+      );
+      expect(res.status).toBe(200);
+      const body = await res.json() as any;
+      expect("google_service_account_key" in body.data).toBe(true);
+      expect(body.data.slack_webhook_url).toBe("https://hooks.slack.com/services/T000/B000/XXXX");
     })
   );
 
@@ -166,12 +198,13 @@ describe("GET /v1/clients", () => {
   });
 
   it(
-    "google_service_account_key is absent from every list item",
+    "google_service_account_key and slack_webhook_url are absent from every list item",
     skipIfNoDb(async () => {
       const res = await app.request("/v1/clients", authed(), TEST_ENV);
       const body = await res.json() as any;
       for (const item of body.data) {
         expect(item).not.toHaveProperty("google_service_account_key");
+        expect(item).not.toHaveProperty("slack_webhook_url");
       }
     })
   );
@@ -238,6 +271,51 @@ describe("POST /v1/clients", () => {
       await sql`DELETE FROM clients WHERE id = ${id}`;
     })
   );
+
+  it(
+    "creates client with slack_webhook_url",
+    skipIfNoDb(async () => {
+      const id = `${NEW_CLIENT_ID}-slack`;
+      const res = await app.request(
+        "/v1/clients",
+        authed({
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id,
+            name: "Slack Client",
+            email: "contact@example.com",
+            slack_webhook_url: "https://hooks.slack.com/services/T111/B111/YYYY",
+          }),
+        }),
+        TEST_ENV
+      );
+      expect(res.status).toBe(201);
+      const body = await res.json() as any;
+      expect(body.data.slack_webhook_url).toBe("https://hooks.slack.com/services/T111/B111/YYYY");
+
+      const sql = neon(DB_URL!);
+      await sql`DELETE FROM clients WHERE id = ${id}`;
+    })
+  );
+
+  it("returns 422 when slack_webhook_url isn't a valid URL", async () => {
+    const res = await app.request(
+      "/v1/clients",
+      authed({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: `${NEW_CLIENT_ID}-bad-slack`,
+          name: "Bad Slack Client",
+          email: "contact@example.com",
+          slack_webhook_url: "not-a-url",
+        }),
+      }),
+      TEST_ENV
+    );
+    expect(res.status).toBe(422);
+  });
 
   it("returns 422 when default_email lacks @", async () => {
     const res = await app.request(
@@ -362,6 +440,24 @@ describe("PATCH /v1/clients/:id", () => {
       expect(res.status).toBe(200);
       const body = await res.json() as any;
       expect(body.data.default_email).toBe("updated-default@example.com");
+    })
+  );
+
+  it(
+    "updates slack_webhook_url",
+    skipIfNoDb(async () => {
+      const res = await app.request(
+        `/v1/clients/${TEST_CLIENT_ID}`,
+        authed({
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slack_webhook_url: "https://hooks.slack.com/services/T222/B222/ZZZZ" }),
+        }),
+        TEST_ENV
+      );
+      expect(res.status).toBe(200);
+      const body = await res.json() as any;
+      expect(body.data.slack_webhook_url).toBe("https://hooks.slack.com/services/T222/B222/ZZZZ");
     })
   );
 

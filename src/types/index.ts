@@ -50,6 +50,7 @@ export interface ClientRecord {
   github_default_branch: string | null;
   github_test_branch: string | null;
   default_email: string | null;
+  slack_webhook_url: string | null;
 }
 
 export interface NotificationLog {
@@ -84,3 +85,11 @@ export interface ClientSummary {
   github_test_branch: string | null;
   default_email: string | null;
 }
+
+/**
+ * ClientSummary plus whichever credential fields were actually requested via
+ * ?include=. Each credential is independently optional — requesting one
+ * doesn't imply the other is present.
+ */
+export type ClientWithCredentials = ClientSummary &
+  Partial<Pick<ClientRecord, "google_service_account_key" | "slack_webhook_url">>;
