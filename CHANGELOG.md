@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/solsoftware-co/sol-api/compare/v1.6.0...v1.7.0) (2026-08-16)
+
+
+### Features
+
+* exclude google_service_account_key from GET /v1/clients/:id by default ([e20b37d](https://github.com/solsoftware-co/sol-api/commit/e20b37d43d5248a2e95ff4128f0e9167548069c1))
+
 # [1.6.0](https://github.com/solsoftware-co/sol-api/compare/v1.5.1...v1.6.0) (2026-07-28)
 
 
