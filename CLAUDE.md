@@ -80,7 +80,7 @@ Error codes: `UNAUTHORIZED`, `NOT_FOUND`, `VALIDATION_ERROR`, `CONFLICT`, `INTER
 
 ### Key data rules
 
-- `google_service_account_key` is **excluded from SQL queries by default** for both `GET /v1/clients` (list) and `GET /v1/clients/:id` — strip it at the query level, not in application code. The single-record endpoint includes it only when called with `?include=credentials`.
+- `google_service_account_key` is **excluded from SQL queries by default** for both `GET /v1/clients` (list) and `GET /v1/clients/:id` — strip it at the query level, not in application code. The single-record endpoint includes it only when called with `?include=google_credentials`.
 - Inactive clients (`active = false`) are treated as not found on single-record lookups and excluded from list responses.
 - Client IDs are human-assigned slugs (e.g. `acme-corp`), not UUIDs.
 - Supported timezones: `America/New_York`, `America/Chicago`, `America/Denver`, `America/Los_Angeles`.

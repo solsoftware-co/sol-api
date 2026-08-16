@@ -104,7 +104,7 @@ Returns `ClientSummary` objects — `google_service_account_key` is excluded fro
 
 ### `GET /v1/clients/:id`
 
-Fetch a single client by ID. Returns 404 if the client does not exist OR is inactive. Returns a `ClientSummary` by default — `google_service_account_key` is excluded, same as the list endpoint. Pass `?include=credentials` to get the full `ClientRecord` with the credential included, for the specific call sites that actually need it (e.g. GA4/Sheets operations).
+Fetch a single client by ID. Returns 404 if the client does not exist OR is inactive. Returns a `ClientSummary` by default — `google_service_account_key` is excluded, same as the list endpoint. Pass `?include=google_credentials` to get the full `ClientRecord` with the credential included, for the specific call sites that actually need it (e.g. GA4/Sheets operations).
 
 **Auth**: Required
 
@@ -118,7 +118,7 @@ Fetch a single client by ID. Returns 404 if the client does not exist OR is inac
 
 | Param | Description |
 |-------|-------------|
-| include | Optional. Set to `credentials` to include `google_service_account_key` in the response. |
+| include | Optional. Set to `google_credentials` to include `google_service_account_key` in the response. |
 
 **Response 200** (default — `ClientSummary`)
 ```json
@@ -138,7 +138,7 @@ Fetch a single client by ID. Returns 404 if the client does not exist OR is inac
 }
 ```
 
-**Response 200** (`?include=credentials` — full `ClientRecord`)
+**Response 200** (`?include=google_credentials` — full `ClientRecord`)
 ```json
 {
   "success": true,

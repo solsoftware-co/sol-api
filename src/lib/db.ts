@@ -18,9 +18,9 @@ export async function healthCheck(db: Db): Promise<void> {
 export async function getClientById(
   db: Db,
   id: string,
-  opts: { includeCredentials?: boolean } = {}
+  opts: { includeGoogleCredentials?: boolean } = {}
 ): Promise<ClientRecord | ClientSummary | null> {
-  if (opts.includeCredentials) {
+  if (opts.includeGoogleCredentials) {
     const rows = await db
       .select()
       .from(clients)
