@@ -55,10 +55,26 @@ function skipIfNoDb(testFn: () => Promise<void>): () => Promise<void> {
 
 describe("GET /v1/clients/:id", () => {
   it(
-    "returns 200 with full ClientRecord for active client",
+    "returns 200 with ClientSummary (no credential) by default",
     skipIfNoDb(async () => {
       const res = await app.request(
         `/v1/clients/${TEST_CLIENT_ID}`,
+        authed(),
+        TEST_ENV
+      );
+      expect(res.status).toBe(200);
+      const body = await res.json() as any;
+      expect(body.success).toBe(true);
+      expect(body.data.id).toBe(TEST_CLIENT_ID);
+      expect("google_service_account_key" in body.data).toBe(false);
+    })
+  );
+
+  it(
+    "returns 200 with the credential included when ?include=credentials",
+    skipIfNoDb(async () => {
+      const res = await app.request(
+        `/v1/clients/${TEST_CLIENT_ID}?include=credentials`,
         authed(),
         TEST_ENV
       );

@@ -104,7 +104,7 @@ Returns `ClientSummary` objects — `google_service_account_key` is excluded fro
 
 ### `GET /v1/clients/:id`
 
-Fetch a single client by ID. Returns 404 if the client does not exist OR is inactive. Returns a `ClientRecord` — includes `google_service_account_key` (required by consuming services for GA4 and Sheets operations).
+Fetch a single client by ID. Returns 404 if the client does not exist OR is inactive. Returns a `ClientSummary` by default — `google_service_account_key` is excluded, same as the list endpoint. Pass `?include=credentials` to get the full `ClientRecord` with the credential included, for the specific call sites that actually need it (e.g. GA4/Sheets operations).
 
 **Auth**: Required
 
@@ -114,7 +114,31 @@ Fetch a single client by ID. Returns 404 if the client does not exist OR is inac
 |-------|-------------|
 | id | Client ID (e.g., `acme-corp`) |
 
-**Response 200**
+**Query parameters**:
+
+| Param | Description |
+|-------|-------------|
+| include | Optional. Set to `credentials` to include `google_service_account_key` in the response. |
+
+**Response 200** (default — `ClientSummary`)
+```json
+{
+  "success": true,
+  "data": {
+    "id": "acme-corp",
+    "name": "Acme Corp",
+    "email": "hello@acme.com",
+    "ga4_property_id": "properties/123456789",
+    "active": true,
+    "settings": {},
+    "timezone": "America/Chicago",
+    "google_service_account_email": "sheets@acme.iam.gserviceaccount.com",
+    "created_at": "2026-01-15T00:00:00.000Z"
+  }
+}
+```
+
+**Response 200** (`?include=credentials` — full `ClientRecord`)
 ```json
 {
   "success": true,
