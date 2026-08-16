@@ -27,6 +27,18 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      # Integration tests run against the persistent staging DB, and a
+      # schema-changing PR's own tests may reference its new column(s)
+      # immediately (see tests/integration/clients.test.ts's seed data) — so
+      # staging must be migrated before tests run, not after. Mirrors the
+      # migrate-then-test order pr.yml already uses for its ephemeral Neon
+      # branch. deploy-staging's own migrate step stays as a harmless,
+      # idempotent no-op safety net (Drizzle tracks applied migrations in
+      # sol_api_migrations and skips anything already run).
+      - name: Apply migrations to staging
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_STAGING }}
       - name: Run tests
         run: npm test -- --bail=1
         env:
