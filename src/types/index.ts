@@ -4,6 +4,8 @@ export interface Env {
   ENVIRONMENT: string;
   SANITY_API_TOKEN: string;
   GITHUB_TOKEN: string;
+  /** Released package.json version, injected at deploy time by CI (release.yml). Unset locally. */
+  APP_VERSION?: string;
 }
 
 export type AppEnv = {
