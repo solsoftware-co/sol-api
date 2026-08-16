@@ -71,10 +71,10 @@ describe("GET /v1/clients/:id", () => {
   );
 
   it(
-    "returns 200 with the credential included when ?include=credentials",
+    "returns 200 with the credential included when ?include=google_credentials",
     skipIfNoDb(async () => {
       const res = await app.request(
-        `/v1/clients/${TEST_CLIENT_ID}?include=credentials`,
+        `/v1/clients/${TEST_CLIENT_ID}?include=google_credentials`,
         authed(),
         TEST_ENV
       );
