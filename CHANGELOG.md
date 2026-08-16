@@ -1,3 +1,15 @@
+# [1.8.0](https://github.com/solsoftware-co/sol-api/compare/v1.7.1...v1.8.0) (2026-08-16)
+
+
+### Bug Fixes
+
+* migrate staging before running tests in release pipeline ([a20e174](https://github.com/solsoftware-co/sol-api/commit/a20e1748fc5c8a3dc701db2727735423be115d55))
+
+
+### Features
+
+* add slack_webhook_url client column, gated like Google credentials ([0c3026f](https://github.com/solsoftware-co/sol-api/commit/0c3026f99a646c14d623c1d6b08210a85f7ca238))
+
 ## [1.7.1](https://github.com/solsoftware-co/sol-api/compare/v1.7.0...v1.7.1) (2026-08-16)
 
 
