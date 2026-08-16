@@ -49,10 +49,13 @@ No auth required. Returns service and database status.
   "data": {
     "status": "ok",
     "database": "connected",
-    "environment": "production"
+    "environment": "production",
+    "version": "1.8.0"
   }
 }
 ```
+
+`version` is the released `package.json` version, injected at deploy time by CI. Reports `"unknown"` for deployments that didn't go through the release pipeline (e.g. local `wrangler dev`).
 
 **Response 503** — database unreachable
 ```json

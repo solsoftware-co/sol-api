@@ -15,6 +15,7 @@ health.get("/", async (c) => {
         status: "ok",
         database: "connected",
         environment: c.env.ENVIRONMENT,
+        version: c.env.APP_VERSION ?? "unknown",
       },
     });
   } catch (err) {

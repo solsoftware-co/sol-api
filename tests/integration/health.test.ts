@@ -47,5 +47,21 @@ describe("GET /health", () => {
     expect(body.data.status).toBe("ok");
     expect(body.data.database).toBe("connected");
     expect(body.data.environment).toBe("test");
+    expect(body.data.version).toBe("unknown");
+  });
+
+  it("reports APP_VERSION when set", async () => {
+    const dbUrl = (env as unknown as Env).DATABASE_URL;
+    if (!dbUrl) {
+      console.warn("Skipping DB-connected health test: DATABASE_URL not set");
+      return;
+    }
+    const res = await app.request(
+      "/health",
+      {},
+      { ...BASE_ENV, DATABASE_URL: dbUrl, ENVIRONMENT: "test", APP_VERSION: "1.2.3" }
+    );
+    const body = await res.json() as any;
+    expect(body.data.version).toBe("1.2.3");
   });
 });
