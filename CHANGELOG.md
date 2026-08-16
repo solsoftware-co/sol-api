@@ -1,3 +1,10 @@
+## [1.7.1](https://github.com/solsoftware-co/sol-api/compare/v1.7.0...v1.7.1) (2026-08-16)
+
+
+### Bug Fixes
+
+* rename credential include param to google_credentials ([c016fe6](https://github.com/solsoftware-co/sol-api/commit/c016fe6380f7634769f10fd83e3ec27331c0f730))
+
 # [1.7.0](https://github.com/solsoftware-co/sol-api/compare/v1.6.0...v1.7.0) (2026-08-16)
 
 
