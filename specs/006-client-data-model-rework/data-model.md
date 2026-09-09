@@ -33,7 +33,7 @@ erDiagram
     GOOGLE_SERVICE_ACCOUNT ||--o{ GOOGLE_DRIVE_INTEGRATION : "authenticates"
 
     CLIENT {
-        uuid id PK
+        text id PK "human-assigned slug, e.g. 'acme-corp' — not a UUID"
         text name
         text default_email
         text_array emails "additional recipients"
@@ -43,7 +43,7 @@ erDiagram
 
     SITE {
         uuid id PK
-        uuid client_id FK
+        text client_id FK
         text domain
         text staging_domain
         text ga4_property_id
@@ -66,14 +66,14 @@ erDiagram
 
     GOOGLE_SERVICE_ACCOUNT {
         uuid id PK
-        uuid client_id FK "tenant scoping — see notes"
+        text client_id FK "tenant scoping — see notes"
         text email
         text key "secret — excluded from list queries"
     }
 
     SLACK_CHANNEL {
         uuid id PK
-        uuid client_id FK
+        text client_id FK
         text name
         text webhook_url "secret — excluded from list queries"
         boolean is_default "proposed — see notes"
@@ -81,7 +81,7 @@ erDiagram
 
     INTEGRATION {
         uuid id PK
-        uuid client_id FK
+        text client_id FK
         text type "'mailchimp' | 'google_drive' | ... — extend per provider"
         text label
         text status
@@ -103,7 +103,7 @@ erDiagram
 
     NOTIFICATION_LOG {
         uuid id PK
-        uuid client_id FK
+        text client_id FK
         text workflow
         text event_name
         text outcome
