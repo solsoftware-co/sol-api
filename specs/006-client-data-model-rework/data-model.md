@@ -44,6 +44,8 @@ erDiagram
     SITE {
         uuid id PK
         text client_id FK
+        text name
+        text description
         text domain
         text staging_domain
         text ga4_property_id
@@ -67,6 +69,8 @@ erDiagram
     GOOGLE_SERVICE_ACCOUNT {
         uuid id PK
         text client_id FK "tenant scoping — see notes"
+        text name
+        text description
         text email
         text key "secret — excluded from list queries"
     }
@@ -75,6 +79,7 @@ erDiagram
         uuid id PK
         text client_id FK
         text name
+        text description
         text webhook_url "secret — excluded from list queries"
         boolean is_default "proposed — see notes"
     }
@@ -83,7 +88,8 @@ erDiagram
         uuid id PK
         text client_id FK
         text type "'mailchimp' | 'google_drive' | ... — extend per provider"
-        text label
+        text name
+        text description
         text status
         boolean is_default "proposed — see notes"
     }
@@ -152,7 +158,7 @@ impossible" rule; it doesn't change how the table is used.
 channel or more than one integration of the same provider, something has to resolve "which
 one" when a triggering event doesn't say. Proposal: one `is_default` per client per table
 (enforce with a partial unique index, e.g. `UNIQUE (client_id) WHERE is_default`), with the
-triggering event payload able to name a specific channel/integration by `label` to override
+triggering event payload able to name a specific channel/integration by `name` to override
 it — mirroring how email recipients already work (payload-level override, no schema
 involvement, per feature 017). Needs explicit sign-off since it wasn't in the original
 table sketch.
@@ -163,6 +169,11 @@ One child table per provider, keyed by `integration_id`, rather than a generic J
 `config` blob on `INTEGRATION` — matches the `SANITY_CONFIG`/`GITHUB_REPO` pattern and this
 codebase's general preference for typed columns over polymorphic blobs. Adding a new
 provider later means adding a new small table, not guessing at a shared shape.
+
+`name`/`description` live on `INTEGRATION`, not on these child tables — they're
+provider-agnostic, human-facing identification ("Main Newsletter List"), not
+provider-specific connection data, so they belong on the shared registry row regardless of
+which provider a given integration happens to use.
 
 Note: `MAILCHIMP_INTEGRATION.api_key` is NOT extracted into a shared "Mailchimp account"
 table the way Google's credential is. If it turns out clients commonly reuse one Mailchimp
