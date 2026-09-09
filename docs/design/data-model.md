@@ -35,8 +35,7 @@ erDiagram
     CLIENT {
         text id PK "human-assigned slug, e.g. 'acme-corp' — not a UUID"
         text name
-        text default_email
-        text_array emails "additional recipients"
+        text_array emails "which email(s) pertain to this client"
         boolean active
         text timezone
     }
@@ -50,6 +49,8 @@ erDiagram
         text staging_domain
         text ga4_property_id
         uuid ga4_service_account_id FK "nullable — see GOOGLE_SERVICE_ACCOUNT"
+        text_array analytics_recipients "who receives this site's scheduled report"
+        boolean analytics_reports_enabled "default true"
     }
 
     SANITY_CONFIG {
@@ -128,9 +129,10 @@ erDiagram
 
 ### CLIENT
 
-Trimmed to what's genuinely client-level: identity, default notification recipient(s),
-active flag, timezone. Everything that used to live here as a bolt-on column for one
-integration moves to a table below.
+Trimmed to what's genuinely client-level: identity, which email(s) pertain to this client
+(`emails`), active flag, timezone. Everything that used to live here as a bolt-on column
+for one integration moves to a table below. `default_email` is dropped — confirmed dead,
+not read by any live code path.
 
 ### SITE, SANITY_CONFIG, GITHUB_REPO
 
@@ -140,6 +142,11 @@ and deploy config each broken out. `SANITY_CONFIG` and `GITHUB_REPO` are kept as
 1:1 tables rather than inlined onto `SITE`, for the same reason `SLACK_CHANNEL`/`INTEGRATION`
 are broken out of `CLIENT`: not every site has a tracked Sanity project or repo, and inlining
 optional fields onto the core entity just relocates the sparse-column problem one table down.
+
+`analytics_recipients`/`analytics_reports_enabled` move the weekly/monthly report's
+recipient list and on/off toggle down from `client.settings.notifications.analytics_report`
+(a JSONB sub-key with no real usage in current client data) to typed columns on `SITE` —
+matching where `ga4_property_id` already lives, since a report is generated per site.
 
 ### GOOGLE_SERVICE_ACCOUNT
 
