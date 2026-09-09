@@ -45,6 +45,7 @@ erDiagram
         uuid id PK
         uuid client_id FK
         text domain
+        text staging_domain
         text ga4_property_id
         uuid ga4_service_account_id FK "nullable — see GOOGLE_SERVICE_ACCOUNT"
     }
