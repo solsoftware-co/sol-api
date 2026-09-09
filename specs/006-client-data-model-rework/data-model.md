@@ -50,14 +50,14 @@ erDiagram
     }
 
     SANITY_CONFIG {
-        uuid site_id PK_FK "1:1 with SITE"
+        uuid site_id PK "also FK to SITE — 1:1"
         text project_id
         text prod_dataset
         text staging_dataset
     }
 
     GITHUB_REPO {
-        uuid site_id PK_FK "1:1 with SITE"
+        uuid site_id PK "also FK to SITE — 1:1"
         text repo_url
         text default_branch
         text staging_branch
@@ -88,14 +88,14 @@ erDiagram
     }
 
     MAILCHIMP_INTEGRATION {
-        uuid integration_id PK_FK "1:1 with INTEGRATION"
+        uuid integration_id PK "also FK to INTEGRATION — 1:1"
         text api_key "secret"
         text list_id
         text server_prefix
     }
 
     GOOGLE_DRIVE_INTEGRATION {
-        uuid integration_id PK_FK "1:1 with INTEGRATION"
+        uuid integration_id PK "also FK to INTEGRATION — 1:1"
         uuid google_service_account_id FK
         text folder_id
     }
