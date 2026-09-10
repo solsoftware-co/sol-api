@@ -1,3 +1,18 @@
+# [1.9.0](https://github.com/solsoftware-co/sol-api/compare/v1.8.0...v1.9.0) (2026-09-10)
+
+
+### Bug Fixes
+
+* correct CLIENT.id and its FKs from uuid to text in ERD ([d8edccf](https://github.com/solsoftware-co/sol-api/commit/d8edccf4de0e84888caea8fa115903694fa70ea0))
+* correct invalid Mermaid key syntax in ERD ([7081694](https://github.com/solsoftware-co/sol-api/commit/7081694ca328bc5f20e52d3ae6815df4b823ec62))
+* run the integrations backfill against PR branches too ([e6656da](https://github.com/solsoftware-co/sol-api/commit/e6656dafc4b14b8a61df207fcc221ed0d330e7c2))
+
+
+### Features
+
+* add idempotent backfill+reconcile script and wire it into CI ([973764e](https://github.com/solsoftware-co/sol-api/commit/973764e44e326593896d74d5c011f73986318185))
+* add Wave 1 integration/notification-channel tables, drop default_email ([0cf8c0a](https://github.com/solsoftware-co/sol-api/commit/0cf8c0ad61e5e8c92c1c9b6d168fae3d00c8eb01))
+
 # [1.8.0](https://github.com/solsoftware-co/sol-api/compare/v1.7.1...v1.8.0) (2026-08-16)
 
 
