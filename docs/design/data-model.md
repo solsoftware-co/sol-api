@@ -82,7 +82,6 @@ erDiagram
         text name
         text description
         text webhook_url "secret — excluded from list queries"
-        boolean is_default "proposed — see notes"
     }
 
     INTEGRATION {
@@ -92,7 +91,6 @@ erDiagram
         text name
         text description
         text status
-        boolean is_default "proposed — see notes"
     }
 
     MAILCHIMP_INTEGRATION {
@@ -159,16 +157,18 @@ rule, two things that share a credential just point their FK at the same
 query-scoping, matching the constitution's "cross-tenant access must be architecturally
 impossible" rule; it doesn't change how the table is used.
 
-### SLACK_CHANNEL, INTEGRATION — the `is_default` columns
+### SLACK_CHANNEL, INTEGRATION — no `is_default` column
 
-**Proposed addition, not yet confirmed.** Once a client can have more than one Slack
-channel or more than one integration of the same provider, something has to resolve "which
-one" when a triggering event doesn't say. Proposal: one `is_default` per client per table
-(enforce with a partial unique index, e.g. `UNIQUE (client_id) WHERE is_default`), with the
-triggering event payload able to name a specific channel/integration by `name` to override
-it — mirroring how email recipients already work (payload-level override, no schema
-involvement, per feature 017). Needs explicit sign-off since it wasn't in the original
-table sketch.
+Considered and rejected. Once a client can have more than one Slack channel or more than
+one integration of the same provider, an implicit "default" flag means a caller can be
+silently ambiguous about which one it means — and adding a second channel/integration for
+an unrelated reason can silently change what an existing, unmodified caller resolves to.
+Instead, the triggering event payload always names the specific channel/integration it
+means, by `name`, with no fallback tier. Less convenient for the single-channel case, but
+fully predictable — no resolution logic anywhere. This is a deliberate divergence from how
+email recipients work (payload override with a schema-level fallback, per feature 017);
+email and integration/channel selection are different enough problems that the
+inconsistency is intentional, not an oversight.
 
 ### MAILCHIMP_INTEGRATION, GOOGLE_DRIVE_INTEGRATION
 
@@ -205,8 +205,6 @@ it to diverge from the current value in `SLACK_CHANNEL` after a channel is recon
 2. **Does any client actually have more than one site today?** If not, `SITE` is
    speculative normalization ahead of a real need — worth confirming before committing to
    the migration cost.
-3. **`is_default` on `SLACK_CHANNEL`/`INTEGRATION`** — confirm this is the right selection
-   mechanism before it's built.
 
 ## Migration Waves (once Open Questions are resolved)
 
