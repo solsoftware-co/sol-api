@@ -113,19 +113,6 @@ jobs:
         env:
           DATABASE_URL: ${{ steps.create-branch.outputs.db_url }}
 
-      # Temporary — part of the client data model rework (see
-      # docs/design/data-model.md). Mirrors the same step in release.yml's
-      # deploy-staging/deploy-production so this script gets exercised by CI
-      # on every PR, not only when it actually runs against staging/
-      # production. Idempotent — safe even though this PR branch's data was
-      # copied from a live environment that may already have real
-      # candidate rows. Remove alongside the matching release.yml steps in
-      # the cleanup branch that drops the legacy columns.
-      - name: Backfill integrations tables
-        run: npm run db:backfill-integrations
-        env:
-          DATABASE_URL: ${{ steps.create-branch.outputs.db_url }}
-
       - name: Run integration tests against PR branch
         run: npm run test:integration
         env:

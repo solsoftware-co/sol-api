@@ -1,6 +1,6 @@
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
-import { eq, and, gte, lte, desc, inArray, getTableColumns } from "drizzle-orm";
+import { eq, and, gte, lte, desc, inArray } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 import { clients, notification_logs, google_service_accounts, slack_channels } from "./schema.js";
 import type { ClientRecord, ClientSummary, ClientWithCredentials, NotificationLog } from "../types/index.js";
@@ -53,11 +53,8 @@ async function fetchClientRecord(
   id: string,
   opts: { requireActive: boolean }
 ): Promise<ClientRecord | null> {
-  const { google_service_account_email, google_service_account_key, slack_webhook_url, ...summaryColumns } =
-    getTableColumns(clients);
-
   const rows = await db
-    .select(summaryColumns)
+    .select()
     .from(clients)
     .where(opts.requireActive ? and(eq(clients.id, id), eq(clients.active, true)) : eq(clients.id, id))
     .limit(1);
@@ -98,15 +95,8 @@ export async function listClients(
   db: Db,
   opts: { limit?: number } = {}
 ): Promise<ClientSummary[]> {
-  const {
-    google_service_account_email: _excludedGoogleEmail,
-    google_service_account_key: _excludedGoogleKey,
-    slack_webhook_url: _excludedSlackUrl,
-    ...summaryColumns
-  } = getTableColumns(clients);
-
   const query = db
-    .select(summaryColumns)
+    .select()
     .from(clients)
     .where(eq(clients.active, true));
 

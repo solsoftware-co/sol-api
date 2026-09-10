@@ -17,8 +17,6 @@ export const clients = pgTable("clients", {
   active: boolean("active").notNull().default(true),
   settings: jsonb("settings").$type<Record<string, unknown>>().notNull().default({}),
   created_at: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
-  google_service_account_email: text("google_service_account_email"),
-  google_service_account_key: text("google_service_account_key"),
   timezone: text("timezone").notNull().default("America/Chicago"),
   sanity_project_id: text("sanity_project_id"),
   sanity_production_dataset: text("sanity_production_dataset"),
@@ -26,14 +24,11 @@ export const clients = pgTable("clients", {
   github_repo: text("github_repo"),
   github_default_branch: text("github_default_branch").default("main"),
   github_test_branch: text("github_test_branch"),
-  slack_webhook_url: text("slack_webhook_url"),
 });
 
 // Wave 1 of the client data model rework (see docs/design/data-model.md).
-// clients.google_service_account_email/_key and clients.slack_webhook_url stay in place
-// for now — Phase 4 (cut over reads/writes, no contract change) backfills these tables
-// from those columns and redirects db.ts to read/write here before the old columns are
-// dropped in a later phase.
+// clients.google_service_account_email/_key and clients.slack_webhook_url are gone —
+// db.ts has read/written these tables exclusively since the cutover (#19).
 
 export const google_service_accounts = pgTable("google_service_accounts", {
   id: uuid("id").primaryKey().defaultRandom(),
