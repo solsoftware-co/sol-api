@@ -49,7 +49,6 @@ export interface ClientRecord {
   github_repo: string | null;
   github_default_branch: string | null;
   github_test_branch: string | null;
-  default_email: string | null;
   slack_webhook_url: string | null;
 }
 
@@ -83,7 +82,6 @@ export interface ClientSummary {
   github_repo: string | null;
   github_default_branch: string | null;
   github_test_branch: string | null;
-  default_email: string | null;
 }
 
 /**

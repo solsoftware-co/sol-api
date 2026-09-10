@@ -30,12 +30,10 @@ describe("createClientSchema", () => {
       github_repo: "solsoftware-co/acme-corp",
       github_default_branch: "main",
       github_test_branch: "develop",
-      default_email: "billing@acme.com",
       slack_webhook_url: "https://hooks.slack.com/services/T000/B000/XXXX",
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.default_email).toBe("billing@acme.com");
       expect(result.data.github_test_branch).toBe("develop");
       expect(result.data.slack_webhook_url).toBe("https://hooks.slack.com/services/T000/B000/XXXX");
     }
@@ -59,22 +57,12 @@ describe("createClientSchema", () => {
     }
   });
 
-  it("rejects a default_email without @", () => {
-    const result = createClientSchema.safeParse({ ...valid, default_email: "notanemail" });
-    expect(result.success).toBe(false);
-  });
-
   it("rejects a google_service_account_email without @", () => {
     const result = createClientSchema.safeParse({
       ...valid,
       google_service_account_email: "notanemail",
     });
     expect(result.success).toBe(false);
-  });
-
-  it("accepts a null default_email", () => {
-    const result = createClientSchema.safeParse({ ...valid, default_email: null });
-    expect(result.success).toBe(true);
   });
 
   it("rejects a missing id", () => {
@@ -141,16 +129,6 @@ describe("updateClientSchema", () => {
 
   it("rejects an email without @", () => {
     const result = updateClientSchema.safeParse({ email: "notvalid" });
-    expect(result.success).toBe(false);
-  });
-
-  it("accepts a default_email update", () => {
-    const result = updateClientSchema.safeParse({ default_email: "new-billing@acme.com" });
-    expect(result.success).toBe(true);
-  });
-
-  it("rejects a default_email without @", () => {
-    const result = updateClientSchema.safeParse({ default_email: "notanemail" });
     expect(result.success).toBe(false);
   });
 

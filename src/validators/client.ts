@@ -32,11 +32,6 @@ export const createClientSchema = z.object({
   github_repo: z.string().nullable().optional(),
   github_default_branch: z.string().nullable().optional().default("main"),
   github_test_branch: z.string().nullable().optional(),
-  default_email: z
-    .string()
-    .includes("@", { message: "default_email must contain @" })
-    .nullable()
-    .optional(),
   slack_webhook_url: z.string().url().nullable().optional(),
 });
 
@@ -63,11 +58,6 @@ export const updateClientSchema = z
     github_repo: z.string().nullable().optional(),
     github_default_branch: z.string().nullable().optional(),
     github_test_branch: z.string().nullable().optional(),
-    default_email: z
-      .string()
-      .includes("@", { message: "default_email must contain @" })
-      .nullable()
-      .optional(),
     slack_webhook_url: z.string().url().nullable().optional(),
   })
   .refine(
