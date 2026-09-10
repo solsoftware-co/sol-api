@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/solsoftware-co/sol-api/compare/v1.9.0...v1.10.0) (2026-09-10)
+
+
+### Features
+
+* cut over reads/writes to google_service_accounts/slack_channels ([6fcb5c2](https://github.com/solsoftware-co/sol-api/commit/6fcb5c237c89f226b0d115872f534c2d96be1273))
+
 # [1.9.0](https://github.com/solsoftware-co/sol-api/compare/v1.8.0...v1.9.0) (2026-09-10)
 
 
