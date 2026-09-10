@@ -15,7 +15,6 @@
     "db:pull": "drizzle-kit pull",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
-    "db:backfill-integrations": "tsx scripts/backfill-integrations.ts",
     "db:studio": "drizzle-kit studio",
     "db:branch:reset": "npx neonctl branches reset dev --parent --project-id patient-cloud-26427251",
     "prepare": "husky"
