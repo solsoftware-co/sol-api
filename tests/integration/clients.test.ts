@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { env } from "cloudflare:test";
-import { neon } from "@neondatabase/serverless";
+import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
 import app from "../../src/index.js";
 import type { Env } from "../../src/types/index.js";
 
@@ -23,22 +23,41 @@ function authed(init: RequestInit = {}): RequestInit {
   };
 }
 
+// google_service_accounts/slack_channels are the source of truth as of the
+// read/write cutover (see docs/design/data-model.md) — clients.slack_webhook_url
+// still physically exists (not yet dropped) but nothing reads it anymore, so
+// seed data has to populate the new table directly for the app to see it.
+async function deleteTestClient<ArrayMode extends boolean, FullResults extends boolean>(
+  sql: NeonQueryFunction<ArrayMode, FullResults>,
+  id: string
+): Promise<void> {
+  await sql`DELETE FROM slack_channels WHERE client_id = ${id}`;
+  await sql`DELETE FROM google_service_accounts WHERE client_id = ${id}`;
+  await sql`DELETE FROM integrations WHERE client_id = ${id}`;
+  await sql`DELETE FROM clients WHERE id = ${id}`;
+}
+
 beforeAll(async () => {
   if (!DB_URL) return;
   const sql = neon(DB_URL);
   await sql`
-    INSERT INTO clients (id, name, email, active, settings, timezone, slack_webhook_url)
+    INSERT INTO clients (id, name, email, active, settings, timezone)
     VALUES
-      (${TEST_CLIENT_ID}, 'Test Client', 'test@example.com', TRUE, '{}', 'America/Chicago', 'https://hooks.slack.com/services/T000/B000/XXXX'),
-      (${TEST_CLIENT_ID_2}, 'Inactive Client', 'inactive@example.com', FALSE, '{}', 'America/Chicago', NULL)
+      (${TEST_CLIENT_ID}, 'Test Client', 'test@example.com', TRUE, '{}', 'America/Chicago'),
+      (${TEST_CLIENT_ID_2}, 'Inactive Client', 'inactive@example.com', FALSE, '{}', 'America/Chicago')
     ON CONFLICT (id) DO NOTHING
+  `;
+  await sql`
+    INSERT INTO slack_channels (client_id, name, webhook_url)
+    VALUES (${TEST_CLIENT_ID}, 'Default', 'https://hooks.slack.com/services/T000/B000/XXXX')
   `;
 });
 
 afterAll(async () => {
   if (!DB_URL) return;
   const sql = neon(DB_URL);
-  await sql`DELETE FROM clients WHERE id IN (${TEST_CLIENT_ID}, ${TEST_CLIENT_ID_2})`;
+  await deleteTestClient(sql, TEST_CLIENT_ID);
+  await deleteTestClient(sql, TEST_CLIENT_ID_2);
 });
 
 function skipIfNoDb(testFn: () => Promise<void>): () => Promise<void> {
@@ -218,7 +237,7 @@ describe("POST /v1/clients", () => {
   afterAll(async () => {
     if (!DB_URL) return;
     const sql = neon(DB_URL);
-    await sql`DELETE FROM clients WHERE id = ${NEW_CLIENT_ID}`;
+    await deleteTestClient(sql, NEW_CLIENT_ID);
   });
 
   it(
@@ -268,7 +287,7 @@ describe("POST /v1/clients", () => {
       expect(body.data.slack_webhook_url).toBe("https://hooks.slack.com/services/T111/B111/YYYY");
 
       const sql = neon(DB_URL!);
-      await sql`DELETE FROM clients WHERE id = ${id}`;
+      await deleteTestClient(sql, id);
     })
   );
 
@@ -289,6 +308,80 @@ describe("POST /v1/clients", () => {
     );
     expect(res.status).toBe(422);
   });
+
+  it("returns 422 when google_service_account_email is set without a key", async () => {
+    const res = await app.request(
+      "/v1/clients",
+      authed({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: `${NEW_CLIENT_ID}-google-email-only`,
+          name: "Google Email Only",
+          email: "contact@example.com",
+          google_service_account_email: "sa@project.iam.gserviceaccount.com",
+        }),
+      }),
+      TEST_ENV
+    );
+    expect(res.status).toBe(422);
+  });
+
+  it("returns 422 when google_service_account_key is set without an email", async () => {
+    const res = await app.request(
+      "/v1/clients",
+      authed({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: `${NEW_CLIENT_ID}-google-key-only`,
+          name: "Google Key Only",
+          email: "contact@example.com",
+          google_service_account_key: "-----BEGIN PRIVATE KEY-----\n...",
+        }),
+      }),
+      TEST_ENV
+    );
+    expect(res.status).toBe(422);
+  });
+
+  it(
+    "creates client with google_service_account_email and _key together",
+    skipIfNoDb(async () => {
+      const id = `${NEW_CLIENT_ID}-google`;
+      const res = await app.request(
+        "/v1/clients",
+        authed({
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id,
+            name: "Google Client",
+            email: "contact@example.com",
+            google_service_account_email: "sa@project.iam.gserviceaccount.com",
+            google_service_account_key: "-----BEGIN PRIVATE KEY-----\n...",
+          }),
+        }),
+        TEST_ENV
+      );
+      expect(res.status).toBe(201);
+      const body = await res.json() as any;
+      expect(body.data.google_service_account_email).toBe("sa@project.iam.gserviceaccount.com");
+      expect(body.data.google_service_account_key).toBe("-----BEGIN PRIVATE KEY-----\n...");
+
+      const getRes = await app.request(
+        `/v1/clients/${id}?include=google_credentials`,
+        authed(),
+        TEST_ENV
+      );
+      const getBody = await getRes.json() as any;
+      expect(getBody.data.google_service_account_email).toBe("sa@project.iam.gserviceaccount.com");
+      expect(getBody.data.google_service_account_key).toBe("-----BEGIN PRIVATE KEY-----\n...");
+
+      const sql = neon(DB_URL!);
+      await deleteTestClient(sql, id);
+    })
+  );
 
   it(
     "returns 409 on duplicate ID",
@@ -395,6 +488,86 @@ describe("PATCH /v1/clients/:id", () => {
       expect(res.status).toBe(200);
       const body = await res.json() as any;
       expect(body.data.slack_webhook_url).toBe("https://hooks.slack.com/services/T222/B222/ZZZZ");
+    })
+  );
+
+  it(
+    "clears slack_webhook_url when patched to null",
+    skipIfNoDb(async () => {
+      const res = await app.request(
+        `/v1/clients/${TEST_CLIENT_ID}`,
+        authed({
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slack_webhook_url: null }),
+        }),
+        TEST_ENV
+      );
+      expect(res.status).toBe(200);
+      const body = await res.json() as any;
+      expect(body.data.slack_webhook_url).toBeNull();
+
+      const getRes = await app.request(
+        `/v1/clients/${TEST_CLIENT_ID}?include=slack_credentials`,
+        authed(),
+        TEST_ENV
+      );
+      const getBody = await getRes.json() as any;
+      expect(getBody.data.slack_webhook_url).toBeNull();
+    })
+  );
+
+  it(
+    "returns 422 when patching google_service_account_key alone with no existing account on file",
+    skipIfNoDb(async () => {
+      const res = await app.request(
+        `/v1/clients/${TEST_CLIENT_ID}`,
+        authed({
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ google_service_account_key: "-----BEGIN PRIVATE KEY-----\n..." }),
+        }),
+        TEST_ENV
+      );
+      expect(res.status).toBe(422);
+    })
+  );
+
+  it(
+    "creates a google service account via PATCH when email and key are provided together",
+    skipIfNoDb(async () => {
+      const res = await app.request(
+        `/v1/clients/${TEST_CLIENT_ID}`,
+        authed({
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            google_service_account_email: "sa@project.iam.gserviceaccount.com",
+            google_service_account_key: "-----BEGIN PRIVATE KEY-----\n...",
+          }),
+        }),
+        TEST_ENV
+      );
+      expect(res.status).toBe(200);
+      const body = await res.json() as any;
+      expect(body.data.google_service_account_email).toBe("sa@project.iam.gserviceaccount.com");
+      expect(body.data.google_service_account_key).toBe("-----BEGIN PRIVATE KEY-----\n...");
+
+      // Now that a row exists, patching the key alone must succeed (merges
+      // with the email already on file rather than requiring both again).
+      const rotateRes = await app.request(
+        `/v1/clients/${TEST_CLIENT_ID}`,
+        authed({
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ google_service_account_key: "-----BEGIN PRIVATE KEY-----\nrotated" }),
+        }),
+        TEST_ENV
+      );
+      expect(rotateRes.status).toBe(200);
+      const rotateBody = await rotateRes.json() as any;
+      expect(rotateBody.data.google_service_account_email).toBe("sa@project.iam.gserviceaccount.com");
+      expect(rotateBody.data.google_service_account_key).toBe("-----BEGIN PRIVATE KEY-----\nrotated");
     })
   );
 

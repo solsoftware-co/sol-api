@@ -33,7 +33,13 @@ export const createClientSchema = z.object({
   github_default_branch: z.string().nullable().optional().default("main"),
   github_test_branch: z.string().nullable().optional(),
   slack_webhook_url: z.string().url().nullable().optional(),
-});
+}).refine(
+  (data) => Boolean(data.google_service_account_email) === Boolean(data.google_service_account_key),
+  {
+    message: "google_service_account_email and google_service_account_key must be provided together",
+    path: ["google_service_account_key"],
+  }
+);
 
 export const updateClientSchema = z
   .object({
