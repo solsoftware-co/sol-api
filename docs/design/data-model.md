@@ -219,3 +219,23 @@ Rollout for whichever wave: expand (new tables + backfill) → reconcile backfil
 columns → cut existing API reads *and* writes over to new tables (contract unchanged) →
 drop dead old columns → update the contract to expose new capabilities → update
 `sol-notificaiton-service`/`sol-integration-service` to use them.
+
+## Wave 1 Rollout Progress
+
+This is a living tracker — update the Status column as each step lands, rather than
+treating this as a point-in-time snapshot. Steps 1–6 are additive/zero-risk (no API
+contract change, old columns and read/write paths untouched); step 7 onward changes actual
+behavior and gets its own branch(es).
+
+| # | Step | Status | Where |
+|---|------|--------|-------|
+| 1 | Agree on target ERD | ✅ Done | This document |
+| 2 | Expand — add the 5 new tables + migration | ✅ Done | `feat/data-model-redesign`, commit `0cf8c0a` (`0004_thankful_iron_patriot.sql`) |
+| 3 | Drop confirmed-dead `default_email` (unrelated cleanup, bundled in) | ✅ Done | Same commit, `0cf8c0a` |
+| 4 | Expand — backfill script (`google_service_accounts`, `slack_channels` from legacy columns) | ✅ Done | `feat/data-model-redesign`, commit `973764e` (`scripts/backfill-integrations.ts`) |
+| 5 | Reconcile backfilled data against the legacy columns | ✅ Done | Same script/commit, `973764e` — built-in reconciliation pass |
+| 6 | Wire the backfill into CI for staging + production (temporary) | ✅ Done | Same commit, `973764e` (`.github/workflows/release.yml`) |
+| 7 | Cut over reads *and* writes to the new tables (API contract unchanged) | ⬜ Not started | Next branch |
+| 8 | Drop the now-dead legacy columns (`slack_webhook_url`, `google_service_account_email`/`_key`); remove the temporary CI backfill step from step 6 | ⬜ Not started | Same next branch |
+| 9 | Update the API contract to expose the new capabilities (multiple channels/integrations, etc.) | ⬜ Not started, not currently scheduled | — |
+| 10 | Update downstream callers (`sol-notificaiton-service`, `sol-integration-service`) to use the new contract | ⬜ Not started, not currently scheduled | — |
