@@ -6,6 +6,7 @@ import {
   insertClient,
   updateClient,
   ConflictError,
+  ValidationError,
 } from "../lib/db.js";
 import { ErrorCode, type AppEnv } from "../types/index.js";
 import { createClientSchema, updateClientSchema } from "../validators/client.js";
@@ -134,7 +135,25 @@ clients.patch("/:id", async (c) => {
   }
 
   const db = createDb(c.env.DATABASE_URL);
-  const updated = await updateClient(db, id, result.data);
+  let updated;
+  try {
+    updated = await updateClient(db, id, result.data);
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: ErrorCode.VALIDATION_ERROR,
+            message: err.message,
+            details: null,
+          },
+        },
+        422
+      );
+    }
+    throw err;
+  }
 
   if (!updated) {
     return c.json(
