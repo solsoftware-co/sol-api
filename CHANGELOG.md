@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/solsoftware-co/sol-api/compare/v1.10.0...v1.11.0) (2026-09-10)
+
+
+### Features
+
+* drop legacy client columns, remove temporary backfill CI step ([2464786](https://github.com/solsoftware-co/sol-api/commit/2464786117edeefe4f67fe3eb5b9f820825d6f12)), closes [#19](https://github.com/solsoftware-co/sol-api/issues/19)
+
 # [1.10.0](https://github.com/solsoftware-co/sol-api/compare/v1.9.0...v1.10.0) (2026-09-10)
 
 
