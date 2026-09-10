@@ -7,7 +7,15 @@ export default defineConfig({
   migrations: {
     table: "sol_api_migrations",
   },
-  tablesFilter: ["clients", "notification_logs"],
+  tablesFilter: [
+    "clients",
+    "notification_logs",
+    "google_service_accounts",
+    "slack_channels",
+    "integrations",
+    "mailchimp_integrations",
+    "google_drive_integrations",
+  ],
   dbCredentials: {
     url: process.env.DATABASE_URL!,
   },
