@@ -93,20 +93,23 @@ export const mailchimp_integrations = pgTable("mailchimp_integrations", {
   }),
 ]);
 
-export const google_drive_integrations = pgTable("google_drive_integrations", {
+export const google_sheets_integrations = pgTable("google_sheets_integrations", {
   integration_id: uuid("integration_id").primaryKey(),
   google_service_account_id: uuid("google_service_account_id").notNull(),
-  folder_id: text("folder_id").notNull(),
+  spreadsheet_id: text("spreadsheet_id").notNull(),
+  sheet_name: text("sheet_name"),
+  column_mapping: text("column_mapping").array().notNull(),
+  table_anchor: text("table_anchor").default("A1"),
 }, (table) => [
   foreignKey({
     columns: [table.integration_id],
     foreignColumns: [integrations.id],
-    name: "google_drive_integrations_integration_id_fkey",
+    name: "google_sheets_integrations_integration_id_fkey",
   }),
   foreignKey({
     columns: [table.google_service_account_id],
     foreignColumns: [google_service_accounts.id],
-    name: "google_drive_integrations_google_service_account_id_fkey",
+    name: "google_sheets_integrations_google_service_account_id_fkey",
   }),
 ]);
 
@@ -145,5 +148,5 @@ export type NewIntegration = typeof integrations.$inferInsert;
 export type MailchimpIntegration = typeof mailchimp_integrations.$inferSelect;
 export type NewMailchimpIntegration = typeof mailchimp_integrations.$inferInsert;
 
-export type GoogleDriveIntegration = typeof google_drive_integrations.$inferSelect;
-export type NewGoogleDriveIntegration = typeof google_drive_integrations.$inferInsert;
+export type GoogleSheetsIntegration = typeof google_sheets_integrations.$inferSelect;
+export type NewGoogleSheetsIntegration = typeof google_sheets_integrations.$inferInsert;
