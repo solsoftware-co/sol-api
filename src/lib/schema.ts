@@ -113,6 +113,62 @@ export const google_sheets_integrations = pgTable("google_sheets_integrations", 
   }),
 ]);
 
+// Wave 2 of the client data model rework (see docs/design/data-model.md).
+// Expand step only — clients.ga4_property_id/timezone/sanity_*/github_* stay in place
+// until the read/write cutover (a later, separate step).
+
+export const sites = pgTable("sites", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  client_id: text("client_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  domain: text("domain"),
+  staging_domain: text("staging_domain"),
+  ga4_property_id: text("ga4_property_id"),
+  ga4_service_account_id: uuid("ga4_service_account_id"),
+  analytics_recipients: text("analytics_recipients").array().notNull().default([]),
+  analytics_reports_enabled: boolean("analytics_reports_enabled").notNull().default(true),
+  created_at: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
+  updated_at: timestamp("updated_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
+}, (table) => [
+  foreignKey({
+    columns: [table.client_id],
+    foreignColumns: [clients.id],
+    name: "sites_client_id_fkey",
+  }),
+  foreignKey({
+    columns: [table.ga4_service_account_id],
+    foreignColumns: [google_service_accounts.id],
+    name: "sites_ga4_service_account_id_fkey",
+  }),
+]);
+
+export const sanity_configs = pgTable("sanity_configs", {
+  site_id: uuid("site_id").primaryKey(),
+  project_id: text("project_id").notNull(),
+  prod_dataset: text("prod_dataset").notNull(),
+  staging_dataset: text("staging_dataset").notNull(),
+}, (table) => [
+  foreignKey({
+    columns: [table.site_id],
+    foreignColumns: [sites.id],
+    name: "sanity_configs_site_id_fkey",
+  }),
+]);
+
+export const github_repos = pgTable("github_repos", {
+  site_id: uuid("site_id").primaryKey(),
+  repo_url: text("repo_url").notNull(),
+  default_branch: text("default_branch").notNull().default("main"),
+  staging_branch: text("staging_branch"),
+}, (table) => [
+  foreignKey({
+    columns: [table.site_id],
+    foreignColumns: [sites.id],
+    name: "github_repos_site_id_fkey",
+  }),
+]);
+
 export const notification_logs = pgTable("notification_logs", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
   client_id: text("client_id").notNull(),
@@ -150,3 +206,12 @@ export type NewMailchimpIntegration = typeof mailchimp_integrations.$inferInsert
 
 export type GoogleSheetsIntegration = typeof google_sheets_integrations.$inferSelect;
 export type NewGoogleSheetsIntegration = typeof google_sheets_integrations.$inferInsert;
+
+export type Site = typeof sites.$inferSelect;
+export type NewSite = typeof sites.$inferInsert;
+
+export type SanityConfig = typeof sanity_configs.$inferSelect;
+export type NewSanityConfig = typeof sanity_configs.$inferInsert;
+
+export type GithubRepo = typeof github_repos.$inferSelect;
+export type NewGithubRepo = typeof github_repos.$inferInsert;

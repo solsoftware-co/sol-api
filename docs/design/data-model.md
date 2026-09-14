@@ -136,17 +136,29 @@ below. `default_email` is dropped — confirmed dead, not read by any live code 
 
 ### SITE, SANITY_CONFIG, GITHUB_REPO
 
-**Not yet confirmed for this wave — see Open Questions.** These model "a website belonging
-to a client" as distinct from the client (business) itself, with GA4 config, CMS config,
-and deploy config each broken out. `SANITY_CONFIG` and `GITHUB_REPO` are kept as separate
-1:1 tables rather than inlined onto `SITE`, for the same reason `SLACK_CHANNEL`/`INTEGRATION`
-are broken out of `CLIENT`: not every site has a tracked Sanity project or repo, and inlining
-optional fields onto the core entity just relocates the sparse-column problem one table down.
+These model "a website belonging to a client" as distinct from the client (business) itself,
+with GA4 config, CMS config, and deploy config each broken out. `SANITY_CONFIG` and
+`GITHUB_REPO` are kept as separate 1:1 tables rather than inlined onto `SITE`, for the same
+reason `SLACK_CHANNEL`/`INTEGRATION` are broken out of `CLIENT`: not every site has a tracked
+Sanity project or repo, and inlining optional fields onto the core entity just relocates the
+sparse-column problem one table down.
 
 `analytics_recipients`/`analytics_reports_enabled` move the weekly/monthly report's
 recipient list and on/off toggle down from `client.settings.notifications.analytics_report`
 (a JSONB sub-key with no real usage in current client data) to typed columns on `SITE` —
 matching where `ga4_property_id` already lives, since a report is generated per site.
+
+Resolution of Open Question 2 (SOL-6): queried production — only 2 clients exist
+(`hwhomes`, `sol`), each with exactly one `ga4_property_id` and one `google_service_accounts`
+row, and neither has `sanity_project_id`/`github_repo` populated at all. So no client
+operates more than one site today. Proceeding with the normalized model anyway rather than
+deferring it: the notification-service target design (see the Miro board's Analytics
+Scheduler frames) already calls `GET /v1/sites` and reads `site.analytics_recipients`/
+`site.analytics_reports_enabled` — fields that don't exist as legacy columns anywhere, so
+they need a home regardless — and the migration is cheap while there are only 2 rows to
+backfill. `SITE`/`SANITY_CONFIG`/`GITHUB_REPO` are provisioned in this wave (`feat/SOL-6-finsh-erd`);
+`CLIENT.ga4_property_id` stays in place for now — this ticket is the expand step only, not
+the read/write cutover (see Wave 2 Rollout Progress below).
 
 ### GOOGLE_SERVICE_ACCOUNT
 
@@ -218,25 +230,26 @@ it to diverge from the current value in `SLACK_CHANNEL` after a channel is recon
 
 ## Open Questions
 
-1. **Is `SITE`/`SANITY_CONFIG`/`GITHUB_REPO` in this migration wave, or a separate effort?**
-   These model site/CMS/deploy infrastructure, a different concern from notification
-   channels and third-party integrations. They also carry the biggest blast radius of
-   anything here — `ga4_property_id` and `timezone` moving off `CLIENT` touches every
-   existing Inngest event and function in `sol-notificaiton-service` that scopes by
-   `clientId` today. Still open from earlier in this thread.
-2. **Does any client actually have more than one site today?** If not, `SITE` is
-   speculative normalization ahead of a real need — worth confirming before committing to
-   the migration cost.
+1. ~~**Is `SITE`/`SANITY_CONFIG`/`GITHUB_REPO` in this migration wave, or a separate
+   effort?**~~ Resolved (SOL-6): they're Wave 2, expand step only — new tables provisioned
+   now, read/write cutover (moving `ga4_property_id` off `CLIENT`) is a later, separate step
+   given its blast radius (touches every existing Inngest event/function in
+   `sol-notificaiton-service` that scopes by `clientId` today).
+2. ~~**Does any client actually have more than one site today?**~~ Resolved (SOL-6): no —
+   see the resolution note under `SITE, SANITY_CONFIG, GITHUB_REPO` below. Building the
+   normalized model anyway since the notification-service target design already depends on
+   it and the migration is cheap at 2 rows.
 
-## Migration Waves (once Open Questions are resolved)
+## Migration Waves
 
 - **Wave 1 — Integrations & notification channels**: `GOOGLE_SERVICE_ACCOUNT`,
   `SLACK_CHANNEL`, `INTEGRATION`, `MAILCHIMP_INTEGRATION`, `GOOGLE_SHEETS_INTEGRATION`
   (migrated from the live `google_drive_integrations` table — see its entity note).
   Unblocks the Mailchimp/Google Sheets integration-service work that motivated this rework.
-- **Wave 2 (tentative) — Site infrastructure**: `SITE`, `SANITY_CONFIG`, `GITHUB_REPO`,
-  plus migrating `ga4_property_id` and the Google service account off `CLIENT` onto `SITE`.
-  Larger blast radius; likely deserves its own spec independent of Wave 1's timeline.
+- **Wave 2 — Site infrastructure**: `SITE`, `SANITY_CONFIG`, `GITHUB_REPO`. Expand step
+  (new tables + backfill) landing in SOL-6; migrating `ga4_property_id` and the Google
+  service account off `CLIENT` onto `SITE` (the cutover + drop steps) is separate follow-up
+  work, given its blast radius.
 
 Rollout for whichever wave: expand (new tables + backfill) → reconcile backfill against old
 columns → cut existing API reads *and* writes over to new tables (contract unchanged) →
@@ -261,4 +274,22 @@ behavior and gets its own branch(es).
 | 7 | Cut over reads *and* writes to the new tables (API contract unchanged) | ✅ Done | `feat/legacy-column-cutover`, commit `b9bf4b8` |
 | 8 | Drop the now-dead legacy columns (`slack_webhook_url`, `google_service_account_email`/`_key`); remove the temporary CI backfill step from step 6 | ✅ Done | `feat/legacy-column-drop` — migration `0005_icy_whizzer.sql`; `scripts/backfill-integrations.ts` deleted (its job is done and it referenced columns that no longer exist) |
 | 9 | Update the API contract to expose the new capabilities (multiple channels/integrations, etc.) | ⬜ Not started, not currently scheduled | — |
+
+## Wave 2 Rollout Progress
+
+Same living-tracker convention as Wave 1. Steps 1–4 are additive/zero-risk (no API contract
+change, `CLIENT`'s legacy site columns and existing read/write paths untouched); the
+read/write cutover and legacy-column drop are separate, later work (see Open Question 1's
+resolution above).
+
+| # | Step | Status | Where |
+|---|------|--------|-------|
+| 1 | Agree on target ERD | ✅ Done | This document / Miro board |
+| 2 | Resolve open question — does any client have more than one site today? | ✅ Done — no | This document, `SITE, SANITY_CONFIG, GITHUB_REPO` entity notes |
+| 3 | Expand — add the 3 new tables + migration | ✅ Done | `feat/SOL-6-finsh-erd` |
+| 4 | Expand — backfill script (`sites` from `clients.ga4_property_id` + matching `google_service_accounts` row; nothing to backfill for `sanity_configs`/`github_repos` — no client has that data populated) | ✅ Done | `feat/SOL-6-finsh-erd`, `scripts/backfill-sites.ts` |
+| 5 | Reconcile backfilled data against the legacy columns | ✅ Done | Same script — built-in reconciliation pass |
+| 6 | Wire the backfill into CI for every PR, staging, and production (temporary) | ✅ Done | `.github/workflows/release.yml`, `.github/workflows/pr.yml` |
+| 7 | Cut over reads *and* writes to `SITE` (API contract unchanged) | ⬜ Not started, not currently scheduled | — |
+| 8 | Drop the now-dead `clients.ga4_property_id`; remove the temporary CI backfill step from step 6 | ⬜ Not started, not currently scheduled | — |
 | 10 | Update downstream callers (`sol-notificaiton-service`, `sol-integration-service`) to use the new contract | ⬜ Not started, not currently scheduled | — |
