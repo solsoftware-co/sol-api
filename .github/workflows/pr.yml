@@ -113,6 +113,13 @@ jobs:
         env:
           DATABASE_URL: ${{ steps.create-branch.outputs.db_url }}
 
+      # Temporary — see the matching step in release.yml's deploy-staging/
+      # deploy-production jobs.
+      - name: Backfill sites table
+        run: npm run db:backfill-sites
+        env:
+          DATABASE_URL: ${{ steps.create-branch.outputs.db_url }}
+
       - name: Run integration tests against PR branch
         run: npm run test:integration
         env:

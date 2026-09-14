@@ -15,6 +15,9 @@ export default defineConfig({
     "integrations",
     "mailchimp_integrations",
     "google_sheets_integrations",
+    "sites",
+    "sanity_configs",
+    "github_repos",
   ],
   dbCredentials: {
     url: process.env.DATABASE_URL!,
