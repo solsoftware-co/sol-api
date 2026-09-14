@@ -39,6 +39,15 @@ export const createClientSchema = z.object({
     message: "google_service_account_email and google_service_account_key must be provided together",
     path: ["google_service_account_key"],
   }
+).refine(
+  (data) => {
+    const vals = [data.sanity_project_id, data.sanity_production_dataset, data.sanity_staging_dataset];
+    return vals.every((v) => v != null) || vals.every((v) => v == null);
+  },
+  {
+    message: "sanity_project_id, sanity_production_dataset, and sanity_staging_dataset must be provided together",
+    path: ["sanity_project_id"],
+  }
 );
 
 export const updateClientSchema = z
