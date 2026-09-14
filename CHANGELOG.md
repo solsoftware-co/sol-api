@@ -1,3 +1,10 @@
+# [1.14.0](https://github.com/solsoftware-co/sol-api/compare/v1.13.0...v1.14.0) (2026-09-14)
+
+
+### Features
+
+* cut over /v1/clients ga4/sanity/github reads+writes to SITE (SOL-22) ([be99ac2](https://github.com/solsoftware-co/sol-api/commit/be99ac2a7ab430fed451ab55fd5a6a497173f173))
+
 # [1.13.0](https://github.com/solsoftware-co/sol-api/compare/v1.12.1...v1.13.0) (2026-09-14)
 
 
