@@ -4,6 +4,7 @@ import { requireApiKey } from "./middleware/auth.js";
 import { requestLogger } from "./middleware/request-logger.js";
 import health from "./routes/health.js";
 import clients from "./routes/clients.js";
+import legacyClients from "./routes/legacy-clients.js";
 import notificationLogs from "./routes/notification-logs.js";
 import type { AppEnv } from "./types/index.js";
 
@@ -16,5 +17,7 @@ app.route("/health", health);
 app.use("/v1/*", requireApiKey);
 app.route("/v1/clients", clients);
 app.route("/v1/notification-logs", notificationLogs);
+app.use("/legacy/*", requireApiKey);
+app.route("/legacy/clients", legacyClients);
 
 export default app;
