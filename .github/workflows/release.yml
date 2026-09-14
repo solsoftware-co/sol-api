@@ -100,15 +100,6 @@ jobs:
         run: npm run db:migrate
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL_STAGING }}
-      # Temporary — part of the client data model rework (see
-      # docs/design/data-model.md). Idempotent: populates `sites` from
-      # clients' legacy ga4_property_id column, skipping any client that
-      # already has a row. Remove this step once the read/write cutover
-      # lands and clients.ga4_property_id is dropped.
-      - name: Backfill sites table
-        run: npm run db:backfill-sites
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL_STAGING }}
       - name: Deploy to staging
         uses: cloudflare/wrangler-action@v3
         with:
@@ -141,11 +132,6 @@ jobs:
       - run: npm ci
       - name: Apply migrations to production
         run: npm run db:migrate
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL_PRODUCTION }}
-      # Temporary — see the matching step in deploy-staging above.
-      - name: Backfill sites table
-        run: npm run db:backfill-sites
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL_PRODUCTION }}
       - name: Deploy to production

@@ -13,22 +13,19 @@ export const clients = pgTable("clients", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull(),
-  ga4_property_id: text("ga4_property_id"),
   active: boolean("active").notNull().default(true),
   settings: jsonb("settings").$type<Record<string, unknown>>().notNull().default({}),
   created_at: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
   timezone: text("timezone").notNull().default("America/Chicago"),
-  sanity_project_id: text("sanity_project_id"),
-  sanity_production_dataset: text("sanity_production_dataset"),
-  sanity_staging_dataset: text("sanity_staging_dataset"),
-  github_repo: text("github_repo"),
-  github_default_branch: text("github_default_branch").default("main"),
-  github_test_branch: text("github_test_branch"),
 });
 
 // Wave 1 of the client data model rework (see docs/design/data-model.md).
 // clients.google_service_account_email/_key and clients.slack_webhook_url are gone —
 // db.ts has read/written these tables exclusively since the cutover (#19).
+//
+// Wave 2 (SOL-22): clients.ga4_property_id/sanity_*/github_* are gone too —
+// sites/sanity_configs/github_repos have been the source of truth since the
+// cutover (PR #24), this just drops the now-dead columns.
 
 export const google_service_accounts = pgTable("google_service_accounts", {
   id: uuid("id").primaryKey().defaultRandom(),

@@ -290,6 +290,6 @@ resolution above).
 | 4 | Expand — backfill script (`sites` from `clients.ga4_property_id` + matching `google_service_accounts` row; nothing to backfill for `sanity_configs`/`github_repos` — no client has that data populated) | ✅ Done | `feat/SOL-6-finsh-erd`, `scripts/backfill-sites.ts` |
 | 5 | Reconcile backfilled data against the legacy columns | ✅ Done | Same script — built-in reconciliation pass |
 | 6 | Wire the backfill into CI for every PR, staging, and production (temporary) | ✅ Done | `.github/workflows/release.yml`, `.github/workflows/pr.yml` |
-| 7 | Cut over reads *and* writes to `SITE` (API contract unchanged) | ⬜ Not started, not currently scheduled | — |
-| 8 | Drop the now-dead `clients.ga4_property_id`; remove the temporary CI backfill step from step 6 | ⬜ Not started, not currently scheduled | — |
-| 10 | Update downstream callers (`sol-notificaiton-service`, `sol-integration-service`) to use the new contract | ⬜ Not started, not currently scheduled | — |
+| 7 | Cut over reads *and* writes to `SITE` (API contract unchanged) | ✅ Done | `feat/SOL-22-cutover-site-reads-writes`, PR #24 — verified live in production (matched `clients`/`sites` `ga4_property_id` values, deploy succeeded) |
+| 8 | Drop the now-dead `clients.ga4_property_id`/`sanity_*`/`github_*`; remove the temporary CI backfill step from step 6 | ✅ Done | `feat/SOL-22-drop-legacy-client-columns` — migration `0008_drop_legacy_client_columns.sql`; `scripts/backfill-sites.ts` deleted (its job is done and it referenced a column that no longer exists) |
+| 9 | Update downstream callers (`sol-notificaiton-service`, `sol-integration-service`) to use the new contract | ⬜ Not started, not currently scheduled | — |
