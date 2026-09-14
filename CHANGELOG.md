@@ -1,3 +1,10 @@
+# [1.13.0](https://github.com/solsoftware-co/sol-api/compare/v1.12.1...v1.13.0) (2026-09-14)
+
+
+### Features
+
+* provision Wave 2 site infrastructure tables (SOL-6) ([925b085](https://github.com/solsoftware-co/sol-api/commit/925b08562f72bc076a4dd6aebc12ffa1d15759ac))
+
 ## [1.12.1](https://github.com/solsoftware-co/sol-api/compare/v1.12.0...v1.12.1) (2026-09-14)
 
 
