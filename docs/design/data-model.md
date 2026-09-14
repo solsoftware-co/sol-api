@@ -29,13 +29,13 @@ erDiagram
     GOOGLE_SERVICE_ACCOUNT ||--o{ SITE : "authenticates GA4 for"
 
     INTEGRATION ||--o| MAILCHIMP_INTEGRATION : "configured as"
-    INTEGRATION ||--o| GOOGLE_DRIVE_INTEGRATION : "configured as"
-    GOOGLE_SERVICE_ACCOUNT ||--o{ GOOGLE_DRIVE_INTEGRATION : "authenticates"
+    INTEGRATION ||--o| GOOGLE_SHEETS_INTEGRATION : "configured as"
+    GOOGLE_SERVICE_ACCOUNT ||--o{ GOOGLE_SHEETS_INTEGRATION : "authenticates"
 
     CLIENT {
         text id PK "human-assigned slug, e.g. 'acme-corp' — not a UUID"
         text name
-        text_array emails "which email(s) pertain to this client"
+        text email
         boolean active
         text timezone
     }
@@ -100,14 +100,17 @@ erDiagram
         text server_prefix
     }
 
-    GOOGLE_DRIVE_INTEGRATION {
+    GOOGLE_SHEETS_INTEGRATION {
         uuid integration_id PK "also FK to INTEGRATION — 1:1"
         uuid google_service_account_id FK
-        text folder_id
+        text spreadsheet_id
+        text sheet_name "nullable — defaults to the first sheet"
+        text_array column_mapping "ordered field keys, e.g. ['_timestamp', 'submitterName', 'submitterEmail'] — the write target, not re-sent by callers per-request"
+        text table_anchor "nullable — cell reference for the top-left corner, e.g. 'B2'; default 'A1'"
     }
 
     NOTIFICATION_LOG {
-        uuid id PK
+        bigserial id PK
         text client_id FK
         text workflow
         text event_name
@@ -127,10 +130,9 @@ erDiagram
 
 ### CLIENT
 
-Trimmed to what's genuinely client-level: identity, which email(s) pertain to this client
-(`emails`), active flag, timezone. Everything that used to live here as a bolt-on column
-for one integration moves to a table below. `default_email` is dropped — confirmed dead,
-not read by any live code path.
+Trimmed to what's genuinely client-level: identity, contact `email`, active flag, timezone.
+Everything that used to live here as a bolt-on column for one integration moves to a table
+below. `default_email` is dropped — confirmed dead, not read by any live code path.
 
 ### SITE, SANITY_CONFIG, GITHUB_REPO
 
@@ -170,7 +172,7 @@ email recipients work (payload override with a schema-level fallback, per featur
 email and integration/channel selection are different enough problems that the
 inconsistency is intentional, not an oversight.
 
-### MAILCHIMP_INTEGRATION, GOOGLE_DRIVE_INTEGRATION
+### MAILCHIMP_INTEGRATION, GOOGLE_SHEETS_INTEGRATION
 
 One child table per provider, keyed by `integration_id`, rather than a generic JSONB
 `config` blob on `INTEGRATION` — matches the `SANITY_CONFIG`/`GITHUB_REPO` pattern and this
@@ -187,6 +189,26 @@ table the way Google's credential is. If it turns out clients commonly reuse one
 account across several lists, that's a small, additive follow-up (extract a
 `MAILCHIMP_ACCOUNT` table, same shape as `GOOGLE_SERVICE_ACCOUNT`) — not worth speculatively
 building now with zero evidence it's needed.
+
+`GOOGLE_SHEETS_INTEGRATION` — previously modeled as `GOOGLE_DRIVE_INTEGRATION` with a bare
+`folder_id`, which matched the Drive *file-upload* API, not what this integration actually
+does: append a row to a specific spreadsheet (the Sheets API). Corrected to carry
+`spreadsheet_id`/`sheet_name`/`table_anchor`, matching what
+`sol-notificaiton-service`'s legacy `GoogleSheetsDestination` payload (`spreadsheetId`,
+`sheetName`, `columns`, `tableAnchor`) already proves is needed. `column_mapping` moves
+that shape's `columns` (an ordered list of field keys) from a per-request, caller-supplied
+value to integration-owned config, stored once against the target sheet — the same
+principle as `SLACK_CHANNEL.webhook_url` or `GOOGLE_SERVICE_ACCOUNT.key`: data that's
+inherent to one specific target belongs stored against that target, not re-sent by every
+caller on every request. A caller sends a plain `fields` bag; `integration-service` maps
+it into an ordered row using this table's stored `column_mapping`.
+
+Note: this table already exists in the live database as `google_drive_integrations`
+(Wave 1, migration `0004_thankful_iron_patriot.sql`) with the old `folder_id` shape — but
+it has zero consumers (no API route yet exposes it, no caller reads or writes it), so the
+rename/reshape is a cheap migration against empty, unused data. There is currently no
+requirement for literal Google Drive file storage (uploading a file into a folder); if that
+need arises later, it should be a new, separate table rather than re-overloading this one.
 
 ### NOTIFICATION_LOG
 
@@ -209,8 +231,9 @@ it to diverge from the current value in `SLACK_CHANNEL` after a channel is recon
 ## Migration Waves (once Open Questions are resolved)
 
 - **Wave 1 — Integrations & notification channels**: `GOOGLE_SERVICE_ACCOUNT`,
-  `SLACK_CHANNEL`, `INTEGRATION`, `MAILCHIMP_INTEGRATION`, `GOOGLE_DRIVE_INTEGRATION`.
-  Unblocks the Mailchimp/Google Drive integration-service work that motivated this rework.
+  `SLACK_CHANNEL`, `INTEGRATION`, `MAILCHIMP_INTEGRATION`, `GOOGLE_SHEETS_INTEGRATION`
+  (migrated from the live `google_drive_integrations` table — see its entity note).
+  Unblocks the Mailchimp/Google Sheets integration-service work that motivated this rework.
 - **Wave 2 (tentative) — Site infrastructure**: `SITE`, `SANITY_CONFIG`, `GITHUB_REPO`,
   plus migrating `ga4_property_id` and the Google service account off `CLIENT` onto `SITE`.
   Larger blast radius; likely deserves its own spec independent of Wave 1's timeline.
