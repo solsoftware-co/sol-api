@@ -1,3 +1,10 @@
+## [1.12.1](https://github.com/solsoftware-co/sol-api/compare/v1.12.0...v1.12.1) (2026-09-14)
+
+
+### Bug Fixes
+
+* rename google_drive_integrations to google_sheets_integrations ([430bf44](https://github.com/solsoftware-co/sol-api/commit/430bf44f76379136d876a491266b41e3a3bda88a))
+
 # [1.12.0](https://github.com/solsoftware-co/sol-api/compare/v1.11.0...v1.12.0) (2026-09-14)
 
 
