@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/solsoftware-co/sol-api/compare/v1.11.0...v1.12.0) (2026-09-14)
+
+
+### Features
+
+* add frozen /legacy/clients fork ([1b2e556](https://github.com/solsoftware-co/sol-api/commit/1b2e5568943032da9edc51c5ce88a0d013c68c6c))
+
 # [1.11.0](https://github.com/solsoftware-co/sol-api/compare/v1.10.0...v1.11.0) (2026-09-10)
 
 
