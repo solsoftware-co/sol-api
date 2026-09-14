@@ -14,7 +14,7 @@ export default defineConfig({
     "slack_channels",
     "integrations",
     "mailchimp_integrations",
-    "google_drive_integrations",
+    "google_sheets_integrations",
   ],
   dbCredentials: {
     url: process.env.DATABASE_URL!,
