@@ -1,3 +1,10 @@
+# [1.15.0](https://github.com/solsoftware-co/sol-api/compare/v1.14.0...v1.15.0) (2026-09-15)
+
+
+### Features
+
+* drop legacy clients.ga4_property_id/sanity_*/github_* columns ([632da3f](https://github.com/solsoftware-co/sol-api/commit/632da3f77f64e94bc29423786b7a88954816051a)), closes [#24](https://github.com/solsoftware-co/sol-api/issues/24)
+
 # [1.14.0](https://github.com/solsoftware-co/sol-api/compare/v1.13.0...v1.14.0) (2026-09-14)
 
 
