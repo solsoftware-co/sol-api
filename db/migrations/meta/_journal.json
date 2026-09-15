@@ -57,6 +57,13 @@
       "when": 1789424409840,
       "tag": "0007_site_infrastructure_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789427381537,
+      "tag": "0008_drop_legacy_client_columns",
+      "breakpoints": true
     }
   ]
 }
