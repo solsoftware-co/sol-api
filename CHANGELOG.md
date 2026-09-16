@@ -1,3 +1,10 @@
+# [1.16.0](https://github.com/solsoftware-co/sol-api/compare/v1.15.0...v1.16.0) (2026-09-16)
+
+
+### Features
+
+* add type/slack_webhook_url columns to notification_logs (SOL-7) ([6bb72f1](https://github.com/solsoftware-co/sol-api/commit/6bb72f1febb82409d05bc1465f8957790153ddd9))
+
 # [1.15.0](https://github.com/solsoftware-co/sol-api/compare/v1.14.0...v1.15.0) (2026-09-15)
 
 
