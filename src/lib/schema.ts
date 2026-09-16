@@ -173,9 +173,11 @@ export const notification_logs = pgTable("notification_logs", {
   event_name: text("event_name").notNull(),
   outcome: text("outcome").notNull(),
   created_at: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
+  type: text("type").notNull().default("email"),
   recipient_email: text("recipient_email"),
   subject: text("subject"),
   resend_id: text("resend_id"),
+  slack_webhook_url: text("slack_webhook_url"),
   error_message: text("error_message"),
   metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
 }, (table) => [

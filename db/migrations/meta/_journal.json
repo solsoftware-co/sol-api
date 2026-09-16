@@ -64,6 +64,13 @@
       "when": 1789427381537,
       "tag": "0008_drop_legacy_client_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789529908831,
+      "tag": "0009_gifted_gressill",
+      "breakpoints": true
     }
   ]
 }
