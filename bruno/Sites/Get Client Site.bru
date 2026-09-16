@@ -1,0 +1,15 @@
+meta {
+  name: Get Client Site
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/v1/clients/acme-corp/sites/00000000-0000-0000-0000-000000000000
+  body: none
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}

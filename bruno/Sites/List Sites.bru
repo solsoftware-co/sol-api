@@ -1,0 +1,22 @@
+meta {
+  name: List Sites
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/sites?active=true&analyticsReportEnabled=true
+  body: none
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+docs {
+  Flat, cross-tenant — every client's sites in one response. Both query
+  params are optional; remove either to stop filtering on it. Never
+  includes credentials, not even the service account email — there is no
+  ?include= on this route.
+}
