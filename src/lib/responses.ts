@@ -11,3 +11,14 @@ export function notFoundResponse(c: Context<AppEnv>, message: string) {
     404
   );
 }
+
+// Same idea for 422s. `details` defaults to null for ad-hoc messages (bad
+// query params, etc.); zod's safeParse failures pass result.error.issues
+// explicitly — there's no separate zod-specific wrapper since the only
+// difference is that one argument.
+export function validationErrorResponse(c: Context<AppEnv>, message: string, details: unknown = null) {
+  return c.json(
+    { success: false as const, error: { code: ErrorCode.VALIDATION_ERROR, message, details } },
+    422
+  );
+}

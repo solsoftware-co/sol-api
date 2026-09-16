@@ -10,8 +10,8 @@
 import { Hono } from "hono";
 import { createDb } from "../lib/db.js";
 import { insertLegacyNotificationLog, ForeignKeyError } from "./notification-logs.repository.js";
-import { ErrorCode, type AppEnv } from "../types/index.js";
-import { notFoundResponse } from "../lib/responses.js";
+import type { AppEnv } from "../types/index.js";
+import { notFoundResponse, validationErrorResponse } from "../lib/responses.js";
 import { createLegacyNotificationLogSchema } from "./notification-logs.validator.js";
 import { logger } from "../lib/logger.js";
 
@@ -22,17 +22,7 @@ legacyNotificationLogs.post("/", async (c) => {
   const result = createLegacyNotificationLogSchema.safeParse(body);
 
   if (!result.success) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ErrorCode.VALIDATION_ERROR,
-          message: "Validation failed",
-          details: result.error.issues,
-        },
-      },
-      422
-    );
+    return validationErrorResponse(c, "Validation failed", result.error.issues);
   }
 
   try {

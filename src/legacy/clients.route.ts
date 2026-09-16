@@ -17,7 +17,7 @@ import {
   ValidationError,
 } from "./clients.repository.js";
 import { ErrorCode, type AppEnv } from "../types/index.js";
-import { notFoundResponse } from "../lib/responses.js";
+import { notFoundResponse, validationErrorResponse } from "../lib/responses.js";
 import { createClientSchema, updateClientSchema } from "./clients.validator.js";
 import { logger } from "../lib/logger.js";
 
@@ -29,17 +29,7 @@ legacyClients.get("/", async (c) => {
     limitParam !== undefined ? parseInt(limitParam, 10) : undefined;
 
   if (limit !== undefined && (isNaN(limit) || limit < 1)) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ErrorCode.VALIDATION_ERROR,
-          message: "limit must be a positive integer",
-          details: null,
-        },
-      },
-      422
-    );
+    return validationErrorResponse(c, "limit must be a positive integer");
   }
 
   const db = createDb(c.env.DATABASE_URL);
@@ -75,17 +65,7 @@ legacyClients.post("/", async (c) => {
   const result = createClientSchema.safeParse(body);
 
   if (!result.success) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ErrorCode.VALIDATION_ERROR,
-          message: "Validation failed",
-          details: result.error.issues,
-        },
-      },
-      422
-    );
+    return validationErrorResponse(c, "Validation failed", result.error.issues);
   }
 
   try {
@@ -120,17 +100,7 @@ legacyClients.patch("/:id", async (c) => {
   const result = updateClientSchema.safeParse(body ?? {});
 
   if (!result.success) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ErrorCode.VALIDATION_ERROR,
-          message: "Validation failed",
-          details: result.error.issues,
-        },
-      },
-      422
-    );
+    return validationErrorResponse(c, "Validation failed", result.error.issues);
   }
 
   const db = createDb(c.env.DATABASE_URL);
@@ -139,17 +109,7 @@ legacyClients.patch("/:id", async (c) => {
     updated = await updateClient(db, id, result.data);
   } catch (err) {
     if (err instanceof ValidationError) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: ErrorCode.VALIDATION_ERROR,
-            message: err.message,
-            details: null,
-          },
-        },
-        422
-      );
+      return validationErrorResponse(c, err.message);
     }
     throw err;
   }

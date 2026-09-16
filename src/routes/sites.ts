@@ -1,7 +1,8 @@
 import { Hono } from "hono";
 import { createDb } from "../lib/db.js";
 import { listSites, parseSitesQuery, InvalidBooleanParamError } from "../services/sites.js";
-import { ErrorCode, type AppEnv } from "../types/index.js";
+import type { AppEnv } from "../types/index.js";
+import { validationErrorResponse } from "../lib/responses.js";
 
 const sites = new Hono<AppEnv>();
 
@@ -14,13 +15,7 @@ sites.get("/", async (c) => {
     });
   } catch (err) {
     if (err instanceof InvalidBooleanParamError) {
-      return c.json(
-        {
-          success: false,
-          error: { code: ErrorCode.VALIDATION_ERROR, message: err.message, details: null },
-        },
-        422
-      );
+      return validationErrorResponse(c, err.message);
     }
     throw err;
   }
