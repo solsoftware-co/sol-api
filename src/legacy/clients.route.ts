@@ -1,20 +1,23 @@
-// Frozen fork of clients.ts as of the /v1/clients contract that
-// sol-notificaiton-service's old (Inngest) workflows were built against.
-// /v1/clients is free to be redesigned around the new normalized contract;
-// this file intentionally does not follow those changes. Retire this file
-// once sol-notificaiton-service's old workflows are fully decommissioned.
+// Frozen fork of the /v1/clients contract that sol-notificaiton-service's old
+// (Inngest) workflows were built against. /v1/clients is free to be
+// redesigned around the new normalized contract; this file intentionally
+// does not follow those changes. Retire this file once
+// sol-notificaiton-service's old workflows are fully decommissioned.
+//
+// Fully isolated: imports nothing from repositories/ or services/, and
+// nothing outside legacy/ imports from this file.
 import { Hono } from "hono";
+import { createDb } from "../lib/db.js";
 import {
-  createDb,
   getClientById,
   listClients,
   insertClient,
   updateClient,
   ConflictError,
   ValidationError,
-} from "../lib/db.js";
+} from "./clients.repository.js";
 import { ErrorCode, type AppEnv } from "../types/index.js";
-import { createClientSchema, updateClientSchema } from "../validators/client.js";
+import { createClientSchema, updateClientSchema } from "./clients.validator.js";
 import { logger } from "../lib/logger.js";
 
 const legacyClients = new Hono<AppEnv>();
