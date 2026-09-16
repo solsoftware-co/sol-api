@@ -19,5 +19,5 @@ export async function getSlackChannel(
 ): Promise<SlackChannelResponse | null> {
   const row = await getSlackChannelById(db, clientId, channelId);
   if (!row) return null;
-  return snakeToCamelKeys(row) as unknown as SlackChannelResponse;
+  return snakeToCamelKeys(row);
 }

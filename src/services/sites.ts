@@ -60,7 +60,7 @@ export async function listSites(
   opts: { active?: boolean; analyticsReportsEnabled?: boolean }
 ): Promise<SiteFlatResponse[]> {
   const rows = await listSitesFlat(db, opts);
-  return rows.map((row) => snakeToCamelKeys(row)) as unknown as SiteFlatResponse[];
+  return rows.map((row) => snakeToCamelKeys(row));
 }
 
 export async function getSite(
@@ -72,14 +72,14 @@ export async function getSite(
   if (!includeGoogleServiceAccount) {
     const row = await getClientSite(db, clientId, siteId);
     if (!row) return null;
-    return snakeToCamelKeys(row) as unknown as ClientSiteResponse;
+    return snakeToCamelKeys(row);
   }
 
   const row = await getClientSiteWithServiceAccount(db, clientId, siteId);
   if (!row) return null;
 
   const { gsa_email, gsa_key, ...base } = row;
-  const response = snakeToCamelKeys(base) as unknown as ClientSiteResponse;
+  const response = snakeToCamelKeys(base);
   if (gsa_email && gsa_key) {
     return { ...response, googleServiceAccount: { email: gsa_email, key: gsa_key } };
   }

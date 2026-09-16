@@ -15,5 +15,5 @@ export interface ClientMinimalResponse {
 export async function getClient(db: Db, id: string): Promise<ClientMinimalResponse | null> {
   const row = await getClientMinimal(db, id);
   if (!row) return null;
-  return snakeToCamelKeys(row) as unknown as ClientMinimalResponse;
+  return snakeToCamelKeys(row);
 }

@@ -52,14 +52,16 @@ export async function getIntegration(
     const child = await getMailchimpChild(db, integrationId);
     return {
       ...baseResponse,
-      mailchimp: child ? (snakeToCamelKeys(child) as { apiKey: string; listId: string; serverPrefix: string }) : null,
-    } as IntegrationResponse;
+      type: "mailchimp",
+      mailchimp: child ? snakeToCamelKeys(child) : null,
+    };
   }
 
   if (base.type === "google_sheets") {
     const child = await getGoogleSheetsChild(db, integrationId);
     return {
       ...baseResponse,
+      type: "google_sheets",
       googleSheets: child
         ? {
             spreadsheetId: child.spreadsheet_id,
@@ -69,8 +71,8 @@ export async function getIntegration(
             googleServiceAccount: { email: child.gsa_email, key: child.gsa_key },
           }
         : null,
-    } as IntegrationResponse;
+    };
   }
 
-  return baseResponse as unknown as IntegrationResponse;
+  return baseResponse;
 }
