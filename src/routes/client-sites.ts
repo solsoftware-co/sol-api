@@ -2,22 +2,15 @@ import { Hono } from "hono";
 import { createDb } from "../lib/db.js";
 import { isUuid } from "../lib/validation.js";
 import { getSite } from "../services/sites.js";
-import { ErrorCode, type AppEnv } from "../types/index.js";
+import { notFoundResponse } from "../lib/responses.js";
+import type { AppEnv } from "../types/index.js";
 
 const clientSites = new Hono<AppEnv>();
 
 clientSites.get("/:clientId/sites/:siteId", async (c) => {
   const clientId = c.req.param("clientId");
   const siteId = c.req.param("siteId");
-
-  const notFound = () =>
-    c.json(
-      {
-        success: false,
-        error: { code: ErrorCode.NOT_FOUND, message: `Site not found: ${siteId}`, details: null },
-      },
-      404
-    );
+  const notFound = () => notFoundResponse(c, `Site not found: ${siteId}`);
 
   if (!isUuid(siteId)) return notFound();
 

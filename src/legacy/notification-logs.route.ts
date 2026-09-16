@@ -11,6 +11,7 @@ import { Hono } from "hono";
 import { createDb } from "../lib/db.js";
 import { insertLegacyNotificationLog, ForeignKeyError } from "./notification-logs.repository.js";
 import { ErrorCode, type AppEnv } from "../types/index.js";
+import { notFoundResponse } from "../lib/responses.js";
 import { createLegacyNotificationLogSchema } from "./notification-logs.validator.js";
 import { logger } from "../lib/logger.js";
 
@@ -48,17 +49,7 @@ legacyNotificationLogs.post("/", async (c) => {
     return c.json({ success: true, data: log }, 201);
   } catch (err) {
     if (err instanceof ForeignKeyError) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: ErrorCode.NOT_FOUND,
-            message: err.message,
-            details: null,
-          },
-        },
-        404
-      );
+      return notFoundResponse(c, err.message);
     }
     throw err;
   }

@@ -17,6 +17,7 @@ import {
   ValidationError,
 } from "./clients.repository.js";
 import { ErrorCode, type AppEnv } from "../types/index.js";
+import { notFoundResponse } from "../lib/responses.js";
 import { createClientSchema, updateClientSchema } from "./clients.validator.js";
 import { logger } from "../lib/logger.js";
 
@@ -63,17 +64,7 @@ legacyClients.get("/:id", async (c) => {
   });
 
   if (!client) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ErrorCode.NOT_FOUND,
-          message: `Client not found: ${id}`,
-          details: null,
-        },
-      },
-      404
-    );
+    return notFoundResponse(c, `Client not found: ${id}`);
   }
 
   return c.json({ success: true, data: client });
@@ -164,17 +155,7 @@ legacyClients.patch("/:id", async (c) => {
   }
 
   if (!updated) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ErrorCode.NOT_FOUND,
-          message: `Client not found: ${id}`,
-          details: null,
-        },
-      },
-      404
-    );
+    return notFoundResponse(c, `Client not found: ${id}`);
   }
 
   logger.info("updated client (legacy)", {

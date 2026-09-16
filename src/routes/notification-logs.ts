@@ -7,6 +7,7 @@ import {
   ForeignKeyError,
 } from "../repositories/notification-logs.js";
 import { ErrorCode, type AppEnv } from "../types/index.js";
+import { notFoundResponse } from "../lib/responses.js";
 import { createNotificationLogSchema } from "../validators/notification-log.js";
 import { logger } from "../lib/logger.js";
 
@@ -91,17 +92,7 @@ notificationLogs.get("/:id", async (c) => {
   const log = await getNotificationLogById(db, id);
 
   if (!log) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ErrorCode.NOT_FOUND,
-          message: `Notification log not found: ${id}`,
-          details: null,
-        },
-      },
-      404
-    );
+    return notFoundResponse(c, `Notification log not found: ${id}`);
   }
 
   return c.json({ success: true, data: log });
@@ -139,17 +130,7 @@ notificationLogs.post("/", async (c) => {
     return c.json({ success: true, data: log }, 201);
   } catch (err) {
     if (err instanceof ForeignKeyError) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: ErrorCode.NOT_FOUND,
-            message: err.message,
-            details: null,
-          },
-        },
-        404
-      );
+      return notFoundResponse(c, err.message);
     }
     throw err;
   }
