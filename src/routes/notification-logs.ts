@@ -1,11 +1,11 @@
 import { Hono } from "hono";
+import { createDb } from "../lib/db.js";
 import {
-  createDb,
   listNotificationLogs,
   getNotificationLogById,
   insertNotificationLog,
   ForeignKeyError,
-} from "../lib/db.js";
+} from "../repositories/notification-logs.js";
 import { ErrorCode, type AppEnv } from "../types/index.js";
 import { createNotificationLogSchema } from "../validators/notification-log.js";
 import { logger } from "../lib/logger.js";
