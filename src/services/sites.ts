@@ -5,7 +5,31 @@ import {
   getClientSiteWithServiceAccount,
 } from "../repositories/sites.js";
 import { snakeToCamelKeys } from "../lib/case.js";
-import type { SiteFlatResponse, ClientSiteResponse } from "../types/sites.js";
+
+export interface SiteFlatResponse {
+  id: string;
+  clientId: string;
+  name: string;
+  ga4PropertyId: string | null;
+  analyticsRecipients: string[];
+  analyticsReportsEnabled: boolean;
+  clientTimezone: string;
+}
+
+export interface ClientSiteResponse {
+  id: string;
+  clientId: string;
+  name: string;
+  description: string | null;
+  domain: string | null;
+  stagingDomain: string | null;
+  ga4PropertyId: string | null;
+  analyticsRecipients: string[];
+  analyticsReportsEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+  googleServiceAccount?: { email: string; key: string };
+}
 
 export class InvalidBooleanParamError extends Error {
   constructor(public readonly param: string) {

@@ -1,7 +1,16 @@
 import type { Db } from "../lib/db.js";
 import { getSlackChannelById } from "../repositories/slack-channels.js";
 import { snakeToCamelKeys } from "../lib/case.js";
-import type { SlackChannelResponse } from "../types/slack-channels.js";
+
+export interface SlackChannelResponse {
+  id: string;
+  clientId: string;
+  name: string;
+  description: string | null;
+  webhookUrl: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export async function getSlackChannel(
   db: Db,
