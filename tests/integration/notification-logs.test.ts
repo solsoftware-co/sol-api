@@ -58,31 +58,39 @@ afterAll(async () => {
 
 describe("GET /v1/notification-logs", () => {
   it(
-    "returns 200 with a list including the seeded log",
+    "returns 200 with a camelCase list including the seeded log, defaulting type to email",
     skipIfNoDb(async () => {
       const res = await app.request(
-        `/v1/notification-logs?client_id=${TEST_CLIENT_ID}`,
+        `/v1/notification-logs?clientId=${TEST_CLIENT_ID}`,
         authed(),
         TEST_ENV
       );
       expect(res.status).toBe(200);
       const body = await res.json() as any;
       expect(body.success).toBe(true);
-      expect(body.data.some((log: any) => log.id === TEST_LOG_ID)).toBe(true);
+      const seeded = body.data.find((log: any) => log.id === TEST_LOG_ID);
+      expect(seeded).toMatchObject({
+        clientId: TEST_CLIENT_ID,
+        workflow: "weekly-report",
+        eventName: "report.sent",
+        outcome: "success",
+        type: "email",
+        recipientEmail: "seeded@example.com",
+      });
     })
   );
 
   it(
-    "filters by client_id",
+    "filters by clientId",
     skipIfNoDb(async () => {
       const res = await app.request(
-        `/v1/notification-logs?client_id=${TEST_CLIENT_ID}`,
+        `/v1/notification-logs?clientId=${TEST_CLIENT_ID}`,
         authed(),
         TEST_ENV
       );
       const body = await res.json() as any;
       for (const log of body.data) {
-        expect(log.client_id).toBe(TEST_CLIENT_ID);
+        expect(log.clientId).toBe(TEST_CLIENT_ID);
       }
     })
   );
@@ -122,7 +130,7 @@ describe("GET /v1/notification-logs", () => {
 
 describe("GET /v1/notification-logs/:id", () => {
   it(
-    "returns 200 for an existing log",
+    "returns 200 with a camelCase shape for an existing log",
     skipIfNoDb(async () => {
       const res = await app.request(
         `/v1/notification-logs/${TEST_LOG_ID}`,
@@ -133,6 +141,7 @@ describe("GET /v1/notification-logs/:id", () => {
       const body = await res.json() as any;
       expect(body.success).toBe(true);
       expect(body.data.id).toBe(TEST_LOG_ID);
+      expect(body.data.clientId).toBe(TEST_CLIENT_ID);
     })
   );
 
@@ -167,7 +176,7 @@ describe("GET /v1/notification-logs/:id", () => {
 
 describe("POST /v1/notification-logs", () => {
   it(
-    "creates a log and returns 201",
+    "creates an email-type log without an explicit type and returns 201 camelCase, defaulting type to email",
     skipIfNoDb(async () => {
       const res = await app.request(
         "/v1/notification-logs",
@@ -175,10 +184,11 @@ describe("POST /v1/notification-logs", () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            client_id: TEST_CLIENT_ID,
+            clientId: TEST_CLIENT_ID,
             workflow: "weekly-report",
-            event_name: "report.sent",
+            eventName: "report.sent",
             outcome: "success",
+            recipientEmail: "sales@acme.com",
           }),
         }),
         TEST_ENV
@@ -186,12 +196,16 @@ describe("POST /v1/notification-logs", () => {
       expect(res.status).toBe(201);
       const body = await res.json() as any;
       expect(body.success).toBe(true);
-      expect(body.data.client_id).toBe(TEST_CLIENT_ID);
+      expect(body.data).toMatchObject({
+        clientId: TEST_CLIENT_ID,
+        type: "email",
+        recipientEmail: "sales@acme.com",
+      });
     })
   );
 
   it(
-    "returns 404 when client_id does not reference an existing client",
+    "creates a slack-type log with slackWebhookUrl and round-trips it through GET /:id",
     skipIfNoDb(async () => {
       const res = await app.request(
         "/v1/notification-logs",
@@ -199,9 +213,45 @@ describe("POST /v1/notification-logs", () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            client_id: "does-not-exist",
+            clientId: TEST_CLIENT_ID,
+            workflow: "form-intake",
+            eventName: "form.submitted",
+            outcome: "sent",
+            type: "slack",
+            slackWebhookUrl: "https://hooks.slack.com/services/T000/B000/XXXX",
+          }),
+        }),
+        TEST_ENV
+      );
+      expect(res.status).toBe(201);
+      const created = (await res.json() as any).data;
+      expect(created).toMatchObject({
+        clientId: TEST_CLIENT_ID,
+        type: "slack",
+        slackWebhookUrl: "https://hooks.slack.com/services/T000/B000/XXXX",
+      });
+
+      const getRes = await app.request(`/v1/notification-logs/${created.id}`, authed(), TEST_ENV);
+      const fetched = (await getRes.json() as any).data;
+      expect(fetched).toMatchObject({
+        type: "slack",
+        slackWebhookUrl: "https://hooks.slack.com/services/T000/B000/XXXX",
+      });
+    })
+  );
+
+  it(
+    "returns 404 when clientId does not reference an existing client",
+    skipIfNoDb(async () => {
+      const res = await app.request(
+        "/v1/notification-logs",
+        authed({
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            clientId: "does-not-exist",
             workflow: "weekly-report",
-            event_name: "report.sent",
+            eventName: "report.sent",
             outcome: "success",
           }),
         }),

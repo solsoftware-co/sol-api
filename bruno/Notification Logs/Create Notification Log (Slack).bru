@@ -1,0 +1,27 @@
+meta {
+  name: Create Notification Log (Slack)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/v1/notification-logs
+  body: json
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+body:json {
+  {
+    "clientId": "acme-corp",
+    "workflow": "form-intake",
+    "eventName": "form.submitted",
+    "outcome": "sent",
+    "type": "slack",
+    "slackWebhookUrl": "https://hooks.slack.com/services/T000/B000/XXXX",
+    "metadata": {}
+  }
+}

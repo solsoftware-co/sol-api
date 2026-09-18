@@ -1,14 +1,16 @@
 import { z } from "zod";
 
 export const createNotificationLogSchema = z.object({
-  client_id: z.string().min(1),
+  clientId: z.string().min(1),
   workflow: z.string().min(1),
-  event_name: z.string().min(1),
+  eventName: z.string().min(1),
   outcome: z.string().min(1),
-  recipient_email: z.string().nullable().optional(),
+  type: z.string().min(1).optional().default("email"),
+  recipientEmail: z.string().nullable().optional(),
   subject: z.string().nullable().optional(),
-  resend_id: z.string().nullable().optional(),
-  error_message: z.string().nullable().optional(),
+  resendId: z.string().nullable().optional(),
+  slackWebhookUrl: z.string().url().nullable().optional(),
+  errorMessage: z.string().nullable().optional(),
   metadata: z.record(z.unknown()).optional().default({}),
 });
 

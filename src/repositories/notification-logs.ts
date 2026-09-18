@@ -47,9 +47,11 @@ export async function insertNotificationLog(
     workflow: string;
     event_name: string;
     outcome: string;
+    type?: string;
     recipient_email?: string | null;
     subject?: string | null;
     resend_id?: string | null;
+    slack_webhook_url?: string | null;
     error_message?: string | null;
     metadata?: Record<string, unknown>;
   }
@@ -62,9 +64,11 @@ export async function insertNotificationLog(
         workflow: data.workflow,
         event_name: data.event_name,
         outcome: data.outcome,
+        type: data.type ?? "email",
         recipient_email: data.recipient_email ?? null,
         subject: data.subject ?? null,
         resend_id: data.resend_id ?? null,
+        slack_webhook_url: data.slack_webhook_url ?? null,
         error_message: data.error_message ?? null,
         metadata: data.metadata ?? {},
       })
