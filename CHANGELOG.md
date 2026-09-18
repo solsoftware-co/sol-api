@@ -1,3 +1,10 @@
+# [1.18.0](https://github.com/solsoftware-co/sol-api/compare/v1.17.0...v1.18.0) (2026-09-18)
+
+
+### Features
+
+* convert /v1/notification-logs to camelCase (SOL-7 PR4) ([8a03ebb](https://github.com/solsoftware-co/sol-api/commit/8a03ebb3dc90e72e96418e4d8fe4d10d8e034157))
+
 # [1.17.0](https://github.com/solsoftware-co/sol-api/compare/v1.16.0...v1.17.0) (2026-09-18)
 
 
