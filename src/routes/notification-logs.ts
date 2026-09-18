@@ -1,11 +1,7 @@
 import { Hono } from "hono";
 import { createDb } from "../lib/db.js";
-import {
-  listNotificationLogs,
-  getNotificationLogById,
-  insertNotificationLog,
-  ForeignKeyError,
-} from "../repositories/notification-logs.js";
+import { ForeignKeyError } from "../repositories/notification-logs.js";
+import { createNotificationLog, listNotificationLogs, getNotificationLog } from "../services/notification-logs.js";
 import type { AppEnv } from "../types/index.js";
 import { notFoundResponse, validationErrorResponse } from "../lib/responses.js";
 import { createNotificationLogSchema } from "../validators/notification-log.js";
@@ -14,7 +10,7 @@ import { logger } from "../lib/logger.js";
 const notificationLogs = new Hono<AppEnv>();
 
 notificationLogs.get("/", async (c) => {
-  const { client_id, from, to, limit: limitParam } = c.req.query();
+  const { clientId, from, to, limit: limitParam } = c.req.query();
 
   const limit = limitParam !== undefined ? parseInt(limitParam, 10) : undefined;
   if (limit !== undefined && (isNaN(limit) || limit < 1)) {
@@ -30,11 +26,11 @@ notificationLogs.get("/", async (c) => {
   }
 
   const db = createDb(c.env.DATABASE_URL);
-  const rows = await listNotificationLogs(db, { client_id, from, to, limit });
+  const rows = await listNotificationLogs(db, { clientId, from, to, limit });
   logger.info("listed notification logs", {
     requestId: c.get("requestId"),
     count: rows.length,
-    clientId: client_id,
+    clientId,
     from,
     to,
     limit,
@@ -49,7 +45,7 @@ notificationLogs.get("/:id", async (c) => {
   }
 
   const db = createDb(c.env.DATABASE_URL);
-  const log = await getNotificationLogById(db, id);
+  const log = await getNotificationLog(db, id);
 
   if (!log) {
     return notFoundResponse(c, `Notification log not found: ${id}`);
@@ -68,13 +64,13 @@ notificationLogs.post("/", async (c) => {
 
   try {
     const db = createDb(c.env.DATABASE_URL);
-    const log = await insertNotificationLog(db, result.data);
+    const log = await createNotificationLog(db, result.data);
     logger.info("created notification log", {
       requestId: c.get("requestId"),
       logId: log.id,
-      clientId: log.client_id,
+      clientId: log.clientId,
       workflow: log.workflow,
-      eventName: log.event_name,
+      eventName: log.eventName,
       outcome: log.outcome,
     });
     return c.json({ success: true, data: log }, 201);

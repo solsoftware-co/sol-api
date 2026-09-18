@@ -1,5 +1,5 @@
 meta {
-  name: Create Notification Log
+  name: Create Notification Log (Email)
   type: http
   seq: 3
 }
@@ -16,14 +16,15 @@ headers {
 
 body:json {
   {
-    "client_id": "acme-corp",
+    "clientId": "acme-corp",
     "workflow": "weekly-report",
-    "event_name": "report_sent",
+    "eventName": "report_sent",
     "outcome": "sent",
-    "recipient_email": "contact@acme.com",
+    "type": "email",
+    "recipientEmail": "contact@acme.com",
     "subject": "Your weekly report",
-    "resend_id": null,
-    "error_message": null,
+    "resendId": null,
+    "errorMessage": null,
     "metadata": {}
   }
 }
