@@ -1,3 +1,6 @@
+// Frozen fork of the client create/update validation contract that
+// sol-notificaiton-service's old workflows were built against. See
+// clients.route.ts for why this stays isolated from the new resource layers.
 import { z } from "zod";
 
 const SUPPORTED_TIMEZONES = [

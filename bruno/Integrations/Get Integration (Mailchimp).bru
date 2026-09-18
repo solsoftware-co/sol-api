@@ -1,0 +1,20 @@
+meta {
+  name: Get Integration (Mailchimp)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/clients/acme-corp/integrations/00000000-0000-0000-0000-000000000000
+  body: none
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+docs {
+  Point the integration id at a row of type `mailchimp` — the response's
+  `mailchimp` field only appears for that type, `googleSheets` for the other.
+}

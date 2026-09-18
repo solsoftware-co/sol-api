@@ -1,180 +1,21 @@
 import { Hono } from "hono";
-import {
-  createDb,
-  getClientById,
-  listClients,
-  insertClient,
-  updateClient,
-  ConflictError,
-  ValidationError,
-} from "../lib/db.js";
-import { ErrorCode, type AppEnv } from "../types/index.js";
-import { createClientSchema, updateClientSchema } from "../validators/client.js";
-import { logger } from "../lib/logger.js";
+import { createDb } from "../lib/db.js";
+import { getClient } from "../services/clients.js";
+import { notFoundResponse } from "../lib/responses.js";
+import type { AppEnv } from "../types/index.js";
 
 const clients = new Hono<AppEnv>();
 
-clients.get("/", async (c) => {
-  const limitParam = c.req.query("limit");
-  const limit =
-    limitParam !== undefined ? parseInt(limitParam, 10) : undefined;
-
-  if (limit !== undefined && (isNaN(limit) || limit < 1)) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ErrorCode.VALIDATION_ERROR,
-          message: "limit must be a positive integer",
-          details: null,
-        },
-      },
-      422
-    );
-  }
-
+clients.get("/:clientId", async (c) => {
   const db = createDb(c.env.DATABASE_URL);
-  const rows = await listClients(db, { limit });
-  logger.info("listed clients", {
-    requestId: c.get("requestId"),
-    count: rows.length,
-    limit,
-  });
-  return c.json({ success: true, data: rows });
-});
-
-clients.get("/:id", async (c) => {
-  const db = createDb(c.env.DATABASE_URL);
-  const id = c.req.param("id");
-  const include = new Set(
-    (c.req.query("include") ?? "").split(",").map((v) => v.trim()).filter(Boolean)
-  );
-  const client = await getClientById(db, id, {
-    includeGoogleCredentials: include.has("google_credentials"),
-    includeSlackCredentials: include.has("slack_credentials"),
-  });
+  const clientId = c.req.param("clientId");
+  const client = await getClient(db, clientId);
 
   if (!client) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ErrorCode.NOT_FOUND,
-          message: `Client not found: ${id}`,
-          details: null,
-        },
-      },
-      404
-    );
+    return notFoundResponse(c, `Client not found: ${clientId}`);
   }
 
   return c.json({ success: true, data: client });
-});
-
-clients.post("/", async (c) => {
-  const body = await c.req.json().catch(() => null);
-  const result = createClientSchema.safeParse(body);
-
-  if (!result.success) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ErrorCode.VALIDATION_ERROR,
-          message: "Validation failed",
-          details: result.error.issues,
-        },
-      },
-      422
-    );
-  }
-
-  try {
-    const db = createDb(c.env.DATABASE_URL);
-    const client = await insertClient(db, result.data);
-    logger.info("created client", {
-      requestId: c.get("requestId"),
-      clientId: client.id,
-    });
-    return c.json({ success: true, data: client }, 201);
-  } catch (err) {
-    if (err instanceof ConflictError) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: ErrorCode.CONFLICT,
-            message: err.message,
-            details: null,
-          },
-        },
-        409
-      );
-    }
-    throw err;
-  }
-});
-
-clients.patch("/:id", async (c) => {
-  const id = c.req.param("id");
-  const body = await c.req.json().catch(() => null);
-  const result = updateClientSchema.safeParse(body ?? {});
-
-  if (!result.success) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ErrorCode.VALIDATION_ERROR,
-          message: "Validation failed",
-          details: result.error.issues,
-        },
-      },
-      422
-    );
-  }
-
-  const db = createDb(c.env.DATABASE_URL);
-  let updated;
-  try {
-    updated = await updateClient(db, id, result.data);
-  } catch (err) {
-    if (err instanceof ValidationError) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: ErrorCode.VALIDATION_ERROR,
-            message: err.message,
-            details: null,
-          },
-        },
-        422
-      );
-    }
-    throw err;
-  }
-
-  if (!updated) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ErrorCode.NOT_FOUND,
-          message: `Client not found: ${id}`,
-          details: null,
-        },
-      },
-      404
-    );
-  }
-
-  logger.info("updated client", {
-    requestId: c.get("requestId"),
-    clientId: id,
-    fields: Object.keys(result.data),
-  });
-  return c.json({ success: true, data: updated });
 });
 
 export default clients;

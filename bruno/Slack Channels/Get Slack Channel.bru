@@ -1,0 +1,15 @@
+meta {
+  name: Get Slack Channel
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/clients/acme-corp/slack-channels/00000000-0000-0000-0000-000000000000
+  body: none
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}

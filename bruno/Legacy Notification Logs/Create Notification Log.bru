@@ -1,0 +1,35 @@
+meta {
+  name: Create Notification Log
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/legacy/notification-logs
+  body: json
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+body:json {
+  {
+    "client_id": "acme-corp",
+    "workflow": "weekly-report",
+    "event_name": "report_sent",
+    "outcome": "sent",
+    "recipient_email": "contact@acme.com",
+    "subject": "Your weekly report",
+    "resend_id": null,
+    "error_message": null,
+    "metadata": {}
+  }
+}
+
+docs {
+  Frozen fork of today's live POST /v1/notification-logs contract — no
+  type/slack_webhook_url in the request. sol-notificaiton-service moves onto
+  this before /v1/notification-logs is cut over to a new camelCase contract.
+}

@@ -1,0 +1,21 @@
+meta {
+  name: Get Integration (Google Sheets)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/v1/clients/acme-corp/integrations/00000000-0000-0000-0000-000000000000
+  body: none
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+docs {
+  Point the integration id at a row of type `google_sheets` — the response's
+  `googleSheets` field (including the nested `googleServiceAccount`) only
+  appears for that type.
+}

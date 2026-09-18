@@ -1,12 +1,13 @@
 import { Hono } from "hono";
+import { createDb } from "../lib/db.js";
 import {
-  createDb,
   listNotificationLogs,
   getNotificationLogById,
   insertNotificationLog,
   ForeignKeyError,
-} from "../lib/db.js";
-import { ErrorCode, type AppEnv } from "../types/index.js";
+} from "../repositories/notification-logs.js";
+import type { AppEnv } from "../types/index.js";
+import { notFoundResponse, validationErrorResponse } from "../lib/responses.js";
 import { createNotificationLogSchema } from "../validators/notification-log.js";
 import { logger } from "../lib/logger.js";
 
@@ -17,45 +18,15 @@ notificationLogs.get("/", async (c) => {
 
   const limit = limitParam !== undefined ? parseInt(limitParam, 10) : undefined;
   if (limit !== undefined && (isNaN(limit) || limit < 1)) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ErrorCode.VALIDATION_ERROR,
-          message: "limit must be a positive integer",
-          details: null,
-        },
-      },
-      422
-    );
+    return validationErrorResponse(c, "limit must be a positive integer");
   }
 
   if (from && isNaN(Date.parse(from))) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ErrorCode.VALIDATION_ERROR,
-          message: "from must be a valid ISO 8601 date",
-          details: null,
-        },
-      },
-      422
-    );
+    return validationErrorResponse(c, "from must be a valid ISO 8601 date");
   }
 
   if (to && isNaN(Date.parse(to))) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ErrorCode.VALIDATION_ERROR,
-          message: "to must be a valid ISO 8601 date",
-          details: null,
-        },
-      },
-      422
-    );
+    return validationErrorResponse(c, "to must be a valid ISO 8601 date");
   }
 
   const db = createDb(c.env.DATABASE_URL);
@@ -74,34 +45,14 @@ notificationLogs.get("/", async (c) => {
 notificationLogs.get("/:id", async (c) => {
   const id = parseInt(c.req.param("id"), 10);
   if (isNaN(id)) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ErrorCode.VALIDATION_ERROR,
-          message: "id must be a valid integer",
-          details: null,
-        },
-      },
-      422
-    );
+    return validationErrorResponse(c, "id must be a valid integer");
   }
 
   const db = createDb(c.env.DATABASE_URL);
   const log = await getNotificationLogById(db, id);
 
   if (!log) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ErrorCode.NOT_FOUND,
-          message: `Notification log not found: ${id}`,
-          details: null,
-        },
-      },
-      404
-    );
+    return notFoundResponse(c, `Notification log not found: ${id}`);
   }
 
   return c.json({ success: true, data: log });
@@ -112,17 +63,7 @@ notificationLogs.post("/", async (c) => {
   const result = createNotificationLogSchema.safeParse(body);
 
   if (!result.success) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ErrorCode.VALIDATION_ERROR,
-          message: "Validation failed",
-          details: result.error.issues,
-        },
-      },
-      422
-    );
+    return validationErrorResponse(c, "Validation failed", result.error.issues);
   }
 
   try {
@@ -139,17 +80,7 @@ notificationLogs.post("/", async (c) => {
     return c.json({ success: true, data: log }, 201);
   } catch (err) {
     if (err instanceof ForeignKeyError) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: ErrorCode.NOT_FOUND,
-            message: err.message,
-            details: null,
-          },
-        },
-        404
-      );
+      return notFoundResponse(c, err.message);
     }
     throw err;
   }

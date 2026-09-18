@@ -59,9 +59,11 @@ export interface NotificationLog {
   event_name: string;
   outcome: string;
   created_at: string;
+  type: string;
   recipient_email: string | null;
   subject: string | null;
   resend_id: string | null;
+  slack_webhook_url: string | null;
   error_message: string | null;
   metadata: Record<string, unknown>;
 }

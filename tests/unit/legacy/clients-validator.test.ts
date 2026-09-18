@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createClientSchema, updateClientSchema } from "../../../src/validators/client.js";
+import { createClientSchema, updateClientSchema } from "../../../src/legacy/clients.validator.js";
 
 describe("createClientSchema", () => {
   const valid = {
