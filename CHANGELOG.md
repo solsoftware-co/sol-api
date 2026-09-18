@@ -1,3 +1,16 @@
+# [1.17.0](https://github.com/solsoftware-co/sol-api/compare/v1.16.0...v1.17.0) (2026-09-18)
+
+
+### Bug Fixes
+
+* type snakeToCamelKeys() output from its input instead of Record<string, unknown> (SOL-7) ([9e44054](https://github.com/solsoftware-co/sol-api/commit/9e4405415408cce29196c4b677b2e856dbf3a5c7))
+
+
+### Features
+
+* isolate frozen client + notification-log contracts into legacy/ (SOL-7) ([972a527](https://github.com/solsoftware-co/sol-api/commit/972a52712c273194bd9294c2b5bf10585ae00e68))
+* rebuild /v1/clients + add slack-channels/integrations/sites routes (SOL-7) ([ab64b9a](https://github.com/solsoftware-co/sol-api/commit/ab64b9a9d59d50b6f9c1d3ba277b00765dd6fc4d))
+
 # [1.16.0](https://github.com/solsoftware-co/sol-api/compare/v1.15.0...v1.16.0) (2026-09-16)
 
 
