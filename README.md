@@ -81,6 +81,19 @@ npm run deploy
 npm run deploy -- --env preview
 ```
 
+### Environments
+
+| Environment | Worker | Neon branch | Deployed by | Purpose |
+|-------------|--------|-------------|-------------|---------|
+| PR preview | `sol-api-pr-<n>` | `pr-<n>` (from `staging`) | `pr.yml` on each PR push | This repo's own PR checks; torn down on close |
+| Dev | `sol-api-dev` | `dev` (from `staging`) | `release.yml` on every merge to `main` | Shared target for **other repos'** pre-merge PR environments (sol-notify, integration-service). Expect test data and noise. |
+| Staging | `sol-api-staging` | `staging` | `release.yml` on every merge to `main` | sol-api's own post-merge, pre-prod verification. Keep it clean — don't point other repos here. |
+| Production | `sol-api` | production | `release.yml`, after manual approval | Live |
+
+Dev secrets live in GitHub as `DATABASE_URL_DEV` and `API_KEY_DEV`. A failed dev deploy never blocks production.
+
+The `dev` Neon branch is also the one local `.dev.vars` points at, so local work and the deployed `sol-api-dev` share data. `npm run db:branch:reset` resets that shared branch back to its parent, wiping any data other repos' PR environments are relying on. Give a heads-up before running it.
+
 ---
 
 ## Specs
