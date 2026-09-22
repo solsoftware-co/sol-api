@@ -14,6 +14,18 @@ ENVIRONMENT = "development"
 [observability]
 enabled = true
 
+# Persistent, shared dev environment — the target for other repos' (sol-notify,
+# integration-service) ephemeral per-PR environments. Expect it to be messy;
+# staging stays reserved for sol-api's own pre-prod verification.
+[env.dev]
+name = "sol-api-dev"
+
+[env.dev.vars]
+ENVIRONMENT = "dev"
+
+[env.dev.observability]
+enabled = true
+
 [env.staging]
 name = "sol-api-staging"
 
