@@ -1,3 +1,10 @@
+# [1.19.0](https://github.com/solsoftware-co/sol-api/compare/v1.18.0...v1.19.0) (2026-09-22)
+
+
+### Features
+
+* add persistent dev environment for cross-repo pre-merge testing (SOL-31) ([4357430](https://github.com/solsoftware-co/sol-api/commit/435743060e2433eaca60c45009550c77e3ca58bf))
+
 # [1.18.0](https://github.com/solsoftware-co/sol-api/compare/v1.17.0...v1.18.0) (2026-09-18)
 
 
