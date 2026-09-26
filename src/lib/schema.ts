@@ -271,15 +271,19 @@ export const form_integrations = pgTable("form_integrations", {
 ]);
 
 // Which channels a form notifies, and how. template names a sol-notify email
-// template; include_fields NULL means "every submitted field". Settings are
-// data, not free-text templates — rendering stays in sol-notify's code.
+// template; include_fields NULL means "every submitted field". message is a
+// fixed string (e.g. a Slack message) — no substitution, so nothing to leak.
+// Settings are data, not free-text templates: rendering stays in sol-notify's
+// code. For now a form's notifications are only sent when its integrations
+// succeed; failure notifications are a later decision.
 export const form_channels = pgTable("form_channels", {
   form_id: uuid("form_id").notNull(),
   channel_id: uuid("channel_id").notNull(),
   client_id: text("client_id").notNull(),
   template: text("template").notNull().default("form_submission"),
-  subject: text("subject").notNull(),
+  subject: text("subject"), // email only — Slack messages have none
   include_fields: text("include_fields").array(),
+  message: text("message"),
 }, (table) => [
   primaryKey({ name: "form_channels_pkey", columns: [table.form_id, table.channel_id] }),
   foreignKey({
@@ -291,6 +295,33 @@ export const form_channels = pgTable("form_channels", {
     columns: [table.client_id, table.channel_id],
     foreignColumns: [channels.client_id, channels.id],
     name: "form_channels_client_id_channel_id_fkey",
+  }),
+]);
+
+// Which of a form's integrations a notification reports on — a many-to-many
+// inside the form_channels link (e.g. one email group hears only about
+// Mailchimp, another about Mailchimp and Google Sheets). No rows for a
+// form_channels link means "report every integration the form ran". The two
+// FKs guarantee a notification can only report integrations this form
+// actually runs; same-client scoping follows from both parents.
+export const form_channel_integrations = pgTable("form_channel_integrations", {
+  form_id: uuid("form_id").notNull(),
+  channel_id: uuid("channel_id").notNull(),
+  integration_id: uuid("integration_id").notNull(),
+}, (table) => [
+  primaryKey({
+    name: "form_channel_integrations_pkey",
+    columns: [table.form_id, table.channel_id, table.integration_id],
+  }),
+  foreignKey({
+    columns: [table.form_id, table.channel_id],
+    foreignColumns: [form_channels.form_id, form_channels.channel_id],
+    name: "form_channel_integrations_form_id_channel_id_fkey",
+  }),
+  foreignKey({
+    columns: [table.form_id, table.integration_id],
+    foreignColumns: [form_integrations.form_id, form_integrations.integration_id],
+    name: "form_channel_integrations_form_id_integration_id_fkey",
   }),
 ]);
 
@@ -409,6 +440,9 @@ export type NewFormIntegration = typeof form_integrations.$inferInsert;
 
 export type FormChannel = typeof form_channels.$inferSelect;
 export type NewFormChannel = typeof form_channels.$inferInsert;
+
+export type FormChannelIntegration = typeof form_channel_integrations.$inferSelect;
+export type NewFormChannelIntegration = typeof form_channel_integrations.$inferInsert;
 
 export type AnalyticsReport = typeof analytics_reports.$inferSelect;
 export type NewAnalyticsReport = typeof analytics_reports.$inferInsert;

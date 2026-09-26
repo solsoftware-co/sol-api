@@ -58,13 +58,21 @@ BEGIN
   	CONSTRAINT "email_groups_channel_type_check" CHECK ("email_groups"."channel_type" = 'email')
   );
 
+  CREATE TABLE "form_channel_integrations" (
+  	"form_id" uuid NOT NULL,
+  	"channel_id" uuid NOT NULL,
+  	"integration_id" uuid NOT NULL,
+  	CONSTRAINT "form_channel_integrations_pkey" PRIMARY KEY("form_id","channel_id","integration_id")
+  );
+
   CREATE TABLE "form_channels" (
   	"form_id" uuid NOT NULL,
   	"channel_id" uuid NOT NULL,
   	"client_id" text NOT NULL,
   	"template" text DEFAULT 'form_submission' NOT NULL,
-  	"subject" text NOT NULL,
+  	"subject" text,
   	"include_fields" text[],
+  	"message" text,
   	CONSTRAINT "form_channels_pkey" PRIMARY KEY("form_id","channel_id")
   );
 
@@ -165,6 +173,10 @@ BEGIN
   ALTER TABLE "channels" ADD CONSTRAINT "channels_client_id_fkey" FOREIGN KEY ("client_id") REFERENCES "public"."clients"("id") ON DELETE no action ON UPDATE no action;
 
   ALTER TABLE "email_groups" ADD CONSTRAINT "email_groups_channel_id_channel_type_fkey" FOREIGN KEY ("channel_id","channel_type") REFERENCES "public"."channels"("id","type") ON DELETE no action ON UPDATE no action;
+
+  ALTER TABLE "form_channel_integrations" ADD CONSTRAINT "form_channel_integrations_form_id_channel_id_fkey" FOREIGN KEY ("form_id","channel_id") REFERENCES "public"."form_channels"("form_id","channel_id") ON DELETE no action ON UPDATE no action;
+
+  ALTER TABLE "form_channel_integrations" ADD CONSTRAINT "form_channel_integrations_form_id_integration_id_fkey" FOREIGN KEY ("form_id","integration_id") REFERENCES "public"."form_integrations"("form_id","integration_id") ON DELETE no action ON UPDATE no action;
 
   ALTER TABLE "form_channels" ADD CONSTRAINT "form_channels_client_id_form_id_fkey" FOREIGN KEY ("client_id","form_id") REFERENCES "public"."forms"("client_id","id") ON DELETE no action ON UPDATE no action;
 

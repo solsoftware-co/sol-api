@@ -23,6 +23,7 @@ export default defineConfig({
     "forms",
     "form_integrations",
     "form_channels",
+    "form_channel_integrations",
     "analytics_reports",
     "analytics_report_channels",
   ],

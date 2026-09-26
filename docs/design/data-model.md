@@ -40,6 +40,8 @@ erDiagram
     INTEGRATION ||--o{ FORM_INTEGRATION : "run by"
     FORM ||--o{ FORM_CHANNEL : "notifies"
     CHANNEL ||--o{ FORM_CHANNEL : "used by"
+    FORM_CHANNEL ||--o{ FORM_CHANNEL_INTEGRATION : "reports on"
+    FORM_INTEGRATION ||--o{ FORM_CHANNEL_INTEGRATION : "reported by"
     SITE ||--o{ ANALYTICS_REPORT : "has"
     ANALYTICS_REPORT ||--o{ ANALYTICS_REPORT_CHANNEL : "sends to"
     CHANNEL ||--o{ ANALYTICS_REPORT_CHANNEL : "used by"
@@ -169,8 +171,15 @@ erDiagram
         uuid channel_id PK
         text client_id "same-client FKs to both sides"
         text template "sol-notify template, default 'form_submission'"
-        text subject
+        text subject "email only — NULL for Slack"
         text_array include_fields "NULL = every submitted field"
+        text message "fixed text, e.g. a Slack message — no substitution"
+    }
+
+    FORM_CHANNEL_INTEGRATION {
+        uuid form_id PK
+        uuid channel_id PK "FK (form_id, channel_id) to FORM_CHANNEL"
+        uuid integration_id PK "FK (form_id, integration_id) to FORM_INTEGRATION"
     }
 
     ANALYTICS_REPORT {
@@ -336,9 +345,37 @@ comes from these rows, so a public caller can never choose recipients. `payload_
 validates submissions; `allowed_origins` drives CORS.
 
 Per-link settings live on the link, not the form: `FORM_INTEGRATION.field_mapping` (so two
-forms can feed one integration with different field names) and `FORM_CHANNEL`'s
-`template`/`subject`/`include_fields`. These are data, not free-text templates — rendering
-stays in sol-notify's code-level template registry.
+forms can feed one integration with different field names; its shape depends on the
+integration type) and `FORM_CHANNEL`'s `template`/`subject`/`include_fields`/`message`.
+These are data, not free-text templates — rendering stays in sol-notify's code-level
+template registry, and `message` is a fixed string with no substitution.
+
+`FORM_CHANNEL_INTEGRATION` says **which of the form's integrations a notification reports
+on** — a many-to-many *inside* the `FORM_CHANNEL` link, so it's a child table rather than a
+column: a `uuid[]` couldn't carry foreign keys. Its two FKs guarantee a notification can only
+report integrations the form actually runs (`→ FORM_INTEGRATION`) for a channel the form
+actually notifies (`→ FORM_CHANNEL`); same-client scoping follows from both parents. No rows
+for a `FORM_CHANNEL` means "report every integration the form ran".
+
+**When notifications fire:** for now, only when the form's integrations succeed. Failure
+notifications (and a per-link `notify_on`) are deliberately deferred.
+
+**Worked example — "Form 01":** a form appending to Mailchimp (email, first and last name)
+and to a Google Sheet (all six fields), then notifying three channels:
+
+| Row | Content |
+|---|---|
+| `FORM` | `payload_schema` requiring `firstName`, `lastName`, `email`; optional `interestedIn`, `budget`, `comment` |
+| `FORM_INTEGRATION` → Mailchimp | `field_mapping` `{"email": "email", "mergeFields": {"FNAME": "firstName", "LNAME": "lastName"}}` |
+| `FORM_INTEGRATION` → Google Sheets | `field_mapping` `{"columns": ["firstName", "lastName", "email", "interestedIn", "budget", "comment"]}` |
+| `FORM_CHANNEL` → Email group 01 | subject "New Mailchimp subscriber", `include_fields` `{firstName, lastName, email}` |
+| `FORM_CHANNEL` → Email group 02 | subject "Form 01 submission", `include_fields` NULL (all) |
+| `FORM_CHANNEL` → Slack `#leads` | subject NULL, `message` "form 01 just ran successfully!" |
+| `FORM_CHANNEL_INTEGRATION` | (group 01, Mailchimp); (group 02, Mailchimp); (group 02, Google Sheets) — no rows for Slack |
+
+Not yet expressible: combining fields into one integration field (e.g. a single `NAME`
+merge field holding "first last") — `field_mapping` maps field to field. A small fixed set of
+transforms can be added when a client needs it.
 
 A form belongs to a **client**, not a site: it's a protected endpoint the client
 configures, which may not map to any one website. Where it can be called from is
@@ -457,7 +494,7 @@ CI backfill script. Both migrations are single `DO` blocks, so each applies atom
 | # | Step | Status | Where |
 |---|------|--------|-------|
 | 1 | Agree on target ERD | ✅ Done | Miro "sol-api Entity Model + forms and channels (proposed)"; sol-brain `sol-gate/03-data-model.md` |
-| 2 | New tables, `slack_channels.channel_id`/`channel_type`, same-client and type-consistency composite FKs; copy Slack channels, default "Client email" channels and analytics reports into them; self-check | ✅ Done | `feat/SOL-35-forms-channels-schema` — `0010_forms_and_channels.sql` |
+| 2 | New tables (incl. `form_channel_integrations`), `slack_channels.channel_id`/`channel_type`, same-client and type-consistency composite FKs; copy Slack channels, default "Client email" channels and analytics reports into them; self-check | ✅ Done | `feat/SOL-35-forms-channels-schema` — `0010_forms_and_channels.sql` |
 | 3 | Switch the legacy routes and `/v1` Slack/sites routes to the new tables; new clients get a default channel | ✅ Done | Same branch |
 | 4 | Drop `slack_channels.client_id`/`name`/`description` and `sites.analytics_recipients`/`analytics_reports_enabled` | ✅ Done | Same branch — `0011_drop_moved_columns.sql` |
 | 5 | New endpoints for Sol Gate / the analytics scheduler (load form, resolve channels, due reports) | ⬜ Not started | SOL-36 |

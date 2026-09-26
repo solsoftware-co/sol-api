@@ -1,6 +1,6 @@
 {
-  "id": "555fac57-6a05-4c4b-9561-5a38c11633c1",
-  "prevId": "3ecfbd0f-8644-4262-8b7b-7eb9294e70eb",
+  "id": "bc85d7e6-8ecb-4c87-a54b-f03d2211a377",
+  "prevId": "4744d5af-dced-49db-b0be-48acd3820834",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -402,6 +402,77 @@
       },
       "isRLSEnabled": false
     },
+    "public.form_channel_integrations": {
+      "name": "form_channel_integrations",
+      "schema": "",
+      "columns": {
+        "form_id": {
+          "name": "form_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "integration_id": {
+          "name": "integration_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "form_channel_integrations_form_id_channel_id_fkey": {
+          "name": "form_channel_integrations_form_id_channel_id_fkey",
+          "tableFrom": "form_channel_integrations",
+          "tableTo": "form_channels",
+          "columnsFrom": [
+            "form_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "form_id",
+            "channel_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "form_channel_integrations_form_id_integration_id_fkey": {
+          "name": "form_channel_integrations_form_id_integration_id_fkey",
+          "tableFrom": "form_channel_integrations",
+          "tableTo": "form_integrations",
+          "columnsFrom": [
+            "form_id",
+            "integration_id"
+          ],
+          "columnsTo": [
+            "form_id",
+            "integration_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "form_channel_integrations_pkey": {
+          "name": "form_channel_integrations_pkey",
+          "columns": [
+            "form_id",
+            "channel_id",
+            "integration_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.form_channels": {
       "name": "form_channels",
       "schema": "",
@@ -435,11 +506,17 @@
           "name": "subject",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "include_fields": {
           "name": "include_fields",
           "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "message": {
+          "name": "message",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         }

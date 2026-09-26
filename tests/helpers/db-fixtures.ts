@@ -158,6 +158,7 @@ export async function deleteTestClientCascade(
   sql: Sql,
   clientId: string
 ): Promise<void> {
+  await sql`DELETE FROM form_channel_integrations WHERE form_id IN (SELECT id FROM forms WHERE client_id = ${clientId})`;
   await sql`DELETE FROM form_channels WHERE client_id = ${clientId}`;
   await sql`DELETE FROM form_integrations WHERE client_id = ${clientId}`;
   await sql`DELETE FROM analytics_report_channels WHERE client_id = ${clientId}`;
