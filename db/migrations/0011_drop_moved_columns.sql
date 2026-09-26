@@ -5,6 +5,16 @@
 -- atomically (see 0010's header).
 DO $$
 BEGIN
+  ALTER TABLE "slack_channels" DROP CONSTRAINT "slack_channels_client_id_fkey";
 
+  ALTER TABLE "sites" DROP COLUMN "analytics_recipients";
+
+  ALTER TABLE "sites" DROP COLUMN "analytics_reports_enabled";
+
+  ALTER TABLE "slack_channels" DROP COLUMN "client_id";
+
+  ALTER TABLE "slack_channels" DROP COLUMN "name";
+
+  ALTER TABLE "slack_channels" DROP COLUMN "description";
 END
 $$;
