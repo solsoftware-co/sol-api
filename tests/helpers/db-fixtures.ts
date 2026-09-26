@@ -45,23 +45,16 @@ export async function insertTestSite(
     domain?: string | null;
     ga4PropertyId?: string | null;
     ga4ServiceAccountId?: string | null;
-    analyticsRecipients?: string[];
-    analyticsReportsEnabled?: boolean;
   }
 ): Promise<string> {
   const rows = await sql`
-    INSERT INTO sites (
-      client_id, name, domain, ga4_property_id, ga4_service_account_id,
-      analytics_recipients, analytics_reports_enabled
-    )
+    INSERT INTO sites (client_id, name, domain, ga4_property_id, ga4_service_account_id)
     VALUES (
       ${opts.clientId},
       ${opts.name ?? "Test Site"},
       ${opts.domain ?? null},
       ${opts.ga4PropertyId ?? null},
-      ${opts.ga4ServiceAccountId ?? null},
-      ${opts.analyticsRecipients ?? []},
-      ${opts.analyticsReportsEnabled ?? true}
+      ${opts.ga4ServiceAccountId ?? null}
     )
     RETURNING id
   `;
@@ -72,12 +65,17 @@ export async function insertTestSlackChannel(
   sql: Sql,
   opts: { clientId: string; name?: string; description?: string | null; webhookUrl?: string }
 ): Promise<string> {
+  // A Slack channel is a channels row (name/description) plus its
+  // slack_channels configuration row (SOL-35). Returns the slack_channels id.
+  const channelRows = await sql`
+    INSERT INTO channels (client_id, type, name, description)
+    VALUES (${opts.clientId}, 'slack', ${opts.name ?? "Test Channel"}, ${opts.description ?? null})
+    RETURNING id
+  `;
   const rows = await sql`
-    INSERT INTO slack_channels (client_id, name, description, webhook_url)
+    INSERT INTO slack_channels (channel_id, webhook_url)
     VALUES (
-      ${opts.clientId},
-      ${opts.name ?? "Test Channel"},
-      ${opts.description ?? null},
+      ${(channelRows[0] as { id: string }).id},
       ${opts.webhookUrl ?? "https://hooks.slack.com/services/T000/B000/XXXX"}
     )
     RETURNING id
@@ -160,6 +158,11 @@ export async function deleteTestClientCascade(
   sql: Sql,
   clientId: string
 ): Promise<void> {
+  await sql`DELETE FROM form_channels WHERE client_id = ${clientId}`;
+  await sql`DELETE FROM form_integrations WHERE client_id = ${clientId}`;
+  await sql`DELETE FROM analytics_report_channels WHERE client_id = ${clientId}`;
+  await sql`DELETE FROM analytics_reports WHERE client_id = ${clientId}`;
+  await sql`DELETE FROM forms WHERE client_id = ${clientId}`;
   await sql`
     DELETE FROM mailchimp_integrations
     WHERE integration_id IN (SELECT id FROM integrations WHERE client_id = ${clientId})
@@ -172,7 +175,9 @@ export async function deleteTestClientCascade(
   await sql`DELETE FROM sanity_configs WHERE site_id IN (SELECT id FROM sites WHERE client_id = ${clientId})`;
   await sql`DELETE FROM github_repos WHERE site_id IN (SELECT id FROM sites WHERE client_id = ${clientId})`;
   await sql`DELETE FROM sites WHERE client_id = ${clientId}`;
-  await sql`DELETE FROM slack_channels WHERE client_id = ${clientId}`;
+  await sql`DELETE FROM slack_channels WHERE channel_id IN (SELECT id FROM channels WHERE client_id = ${clientId})`;
+  await sql`DELETE FROM email_groups WHERE channel_id IN (SELECT id FROM channels WHERE client_id = ${clientId})`;
+  await sql`DELETE FROM channels WHERE client_id = ${clientId}`;
   await sql`DELETE FROM google_service_accounts WHERE client_id = ${clientId}`;
   await sql`DELETE FROM clients WHERE id = ${clientId}`;
 }

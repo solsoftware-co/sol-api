@@ -32,6 +32,18 @@ erDiagram
     INTEGRATION ||--o| GOOGLE_SHEETS_INTEGRATION : "configured as"
     GOOGLE_SERVICE_ACCOUNT ||--o{ GOOGLE_SHEETS_INTEGRATION : "authenticates"
 
+    CLIENT ||--o{ CHANNEL : "has"
+    CHANNEL ||--o| EMAIL_GROUP : "configured as"
+    CHANNEL ||--o| SLACK_CHANNEL : "configured as"
+    CLIENT ||--o{ FORM : "owns"
+    FORM ||--o{ FORM_INTEGRATION : "runs"
+    INTEGRATION ||--o{ FORM_INTEGRATION : "run by"
+    FORM ||--o{ FORM_CHANNEL : "notifies"
+    CHANNEL ||--o{ FORM_CHANNEL : "used by"
+    SITE ||--o{ ANALYTICS_REPORT : "has"
+    ANALYTICS_REPORT ||--o{ ANALYTICS_REPORT_CHANNEL : "sends to"
+    CHANNEL ||--o{ ANALYTICS_REPORT_CHANNEL : "used by"
+
     CLIENT {
         text id PK "human-assigned slug, e.g. 'acme-corp' — not a UUID"
         text name
@@ -49,8 +61,6 @@ erDiagram
         text staging_domain
         text ga4_property_id
         uuid ga4_service_account_id FK "nullable — see GOOGLE_SERVICE_ACCOUNT"
-        text_array analytics_recipients "who receives this site's scheduled report"
-        boolean analytics_reports_enabled "default true"
     }
 
     SANITY_CONFIG {
@@ -78,9 +88,8 @@ erDiagram
 
     SLACK_CHANNEL {
         uuid id PK
-        text client_id FK
-        text name
-        text description
+        uuid channel_id FK "Wave 3 — which CHANNEL this configures; owner/name/description live there"
+        text channel_type "always 'slack' — see type-consistency note"
         text webhook_url "secret — excluded from list queries"
     }
 
@@ -124,6 +133,61 @@ erDiagram
         text error_message
         jsonb metadata
     }
+
+    CHANNEL {
+        uuid id PK
+        text client_id FK
+        text type "'email' | 'slack'"
+        text name "unique per client"
+        text description
+    }
+
+    EMAIL_GROUP {
+        uuid channel_id PK "also FK to CHANNEL — 1:1"
+        text channel_type "always 'email' — see type-consistency note"
+        text_array email_addresses
+    }
+
+    FORM {
+        uuid id PK
+        text client_id FK
+        text name
+        text description
+        jsonb payload_schema "expected submission fields"
+        text_array allowed_origins "CORS"
+    }
+
+    FORM_INTEGRATION {
+        uuid form_id PK
+        uuid integration_id PK
+        text client_id "same-client FKs to both sides"
+        jsonb field_mapping "form fields to integration fields"
+    }
+
+    FORM_CHANNEL {
+        uuid form_id PK
+        uuid channel_id PK
+        text client_id "same-client FKs to both sides"
+        text template "sol-notify template, default 'form_submission'"
+        text subject
+        text_array include_fields "NULL = every submitted field"
+    }
+
+    ANALYTICS_REPORT {
+        uuid id PK
+        text client_id FK
+        uuid site_id FK
+        boolean enabled
+        text cron "read in the client's timezone"
+        text lookback "'last_week' | 'last_month' | 'last_7_days' | 'last_28_days'"
+        timestamptz last_run_at
+    }
+
+    ANALYTICS_REPORT_CHANNEL {
+        uuid analytics_report_id PK
+        uuid channel_id PK
+        text client_id "same-client FKs to both sides"
+    }
 ```
 
 ## Entity Notes
@@ -143,6 +207,8 @@ reason `SLACK_CHANNEL`/`INTEGRATION` are broken out of `CLIENT`: not every site 
 Sanity project or repo, and inlining optional fields onto the core entity just relocates the
 sparse-column problem one table down.
 
+(Superseded in Wave 3: these two columns moved to `ANALYTICS_REPORT`/
+`ANALYTICS_REPORT_CHANNEL` and were dropped — see that entity note. Kept below as history.)
 `analytics_recipients`/`analytics_reports_enabled` move the weekly/monthly report's
 recipient list and on/off toggle down from `client.settings.notifications.analytics_report`
 (a JSONB sub-key with no real usage in current client data) to typed columns on `SITE` —
@@ -222,6 +288,86 @@ rename/reshape is a cheap migration against empty, unused data. There is current
 requirement for literal Google Drive file storage (uploading a file into a folder); if that
 need arises later, it should be a new, separate table rather than re-overloading this one.
 
+### CHANNEL, EMAIL_GROUP (Wave 3)
+
+A channel is a named, client-owned place a notification can go ("Sales team", "#leads"),
+*configured as* exactly one `EMAIL_GROUP` or `SLACK_CHANNEL` — the same pattern as
+`INTEGRATION` → `MAILCHIMP_INTEGRATION`/`GOOGLE_SHEETS_INTEGRATION`. Forms and analytics
+reports link to channels many-to-many, so "who can this form ever notify?" is answered
+structurally by its links, and a channel reused by several forms is edited in one place.
+Designed in the Sol Gate work (SOL-35; design notes in the sol-brain vault, `sol-gate/`).
+
+`EMAIL_GROUP` is a 1:1 extension keyed by `channel_id` — reuse happens at the channel level,
+so a group never needs to be shared on its own. Addresses are a plain `text[]` (like
+`analytics_recipients`); a member table is only worth it if per-address state (bounces,
+unsubscribes) is ever needed.
+
+`SLACK_CHANNEL` predates channels, so rather than being re-keyed it gains a `channel_id`
+(its own `id` is still what `/v1/clients/:clientId/slack-channels/:channelId` takes) and
+becomes just the Slack-specific part — the webhook — like `EMAIL_GROUP`. Its `client_id`,
+`name` and `description` moved to `CHANNEL`: migration `0010` copies each Slack channel
+into a `channels` row (a client's same-named duplicates get " (2)", " (3)"…) and `0011`
+drops the columns. The `/v1` route reads owner/name/description through the channel
+(response unchanged); the legacy routes find, update and remove a client's Slack channel
+through `channels`, and create a "Default" channel alongside each Slack row.
+
+**Type consistency.** An `EMAIL_GROUP` must configure an email channel and a `SLACK_CHANNEL`
+a Slack channel, and a channel can't have both. Enforced with the same composite-FK trick
+as same-client scoping: `CHANNEL` has `UNIQUE (id, type)`, and each extension table carries
+a `channel_type` column pinned by a `CHECK` to its own type, with an FK
+`(channel_id, channel_type)` → `CHANNEL (id, type)`. Since a channel has exactly one type,
+it can only ever be configured by the matching table; changing a configured channel's type
+is rejected too. (What this can't express is *completeness* — that every channel has its
+configuration row. `0010`'s self-check covers the migrated data; code that creates
+channels must create both rows together.)
+
+This doesn't reintroduce the rejected `is_default` idea: each client gets a *named*
+"Client email" channel (holding `clients.email`) — created by `0010` for existing clients
+and by the legacy create route for new ones, and kept in step when the legacy update route
+changes the client's email — but nothing
+resolves to it implicitly — a form or report notifies it only if explicitly linked to it.
+
+### FORM, FORM_INTEGRATION, FORM_CHANNEL (Wave 3)
+
+The configuration behind Sol Gate, the planned public front door for client websites
+(SOL-38). A website submits to a form by ID and supplies only field values; everything else
+— which integrations run (`FORM_INTEGRATION`), who is notified and how (`FORM_CHANNEL`) —
+comes from these rows, so a public caller can never choose recipients. `payload_schema`
+validates submissions; `allowed_origins` drives CORS.
+
+Per-link settings live on the link, not the form: `FORM_INTEGRATION.field_mapping` (so two
+forms can feed one integration with different field names) and `FORM_CHANNEL`'s
+`template`/`subject`/`include_fields`. These are data, not free-text templates — rendering
+stays in sol-notify's code-level template registry.
+
+A form belongs to a **client**, not a site: it's a protected endpoint the client
+configures, which may not map to any one website. Where it can be called from is
+`allowed_origins`, not a site relationship. If grouping forms by site is ever wanted, an
+optional `site_id` can be added then.
+
+### ANALYTICS_REPORT, ANALYTICS_REPORT_CHANNEL (Wave 3)
+
+Replaces the dropped `SITE.analytics_recipients`/`analytics_reports_enabled` with a report per site that
+has its own schedule (`cron`, in the client's timezone), period (`lookback`, a named preset
+rather than a raw duration) and channels. The column is `lookback`, not `window` — `window`
+is a reserved word in Postgres. `last_run_at` lets a fixed-interval scheduler tick skip
+reports it already sent.
+
+`0010` created one per site, linked to an "Analytics: <site>" email channel holding the
+old recipients — or, when there were none, to the client's "Client email" channel (where the
+old service's recipient fallback ended up). Schedule matches the old Inngest job exactly: `0 9 * * 2` (Tuesdays 9am client-local —
+the old job fired Tuesday 00:00 UTC and slept until the next 9am business day) with
+`last_week`. The old service's weekend/holiday skipping is not modeled; the new scheduler
+(SOL-12) decides whether to keep it.
+
+### Same-client composite FKs (Wave 3)
+
+Every table something links *to* (`SITE`, `INTEGRATION`, `CHANNEL`, `FORM`,
+`ANALYTICS_REPORT`) has `UNIQUE (client_id, id)`, and every link row carries its own
+`client_id` with composite FKs to both sides. A row joining one client's form to another
+client's channel or integration is rejected by the database, not just by application code.
+The same applies to `ANALYTICS_REPORT` → `SITE`.
+
 ### NOTIFICATION_LOG
 
 Unchanged. `slack_webhook_url` here is deliberately denormalized — it's a snapshot of what
@@ -250,6 +396,13 @@ it to diverge from the current value in `SLACK_CHANNEL` after a channel is recon
   (new tables + backfill) landing in SOL-6; migrating `ga4_property_id` and the Google
   service account off `CLIENT` onto `SITE` (the cutover + drop steps) is separate follow-up
   work, given its blast radius.
+
+- **Wave 3 — Channels, forms and analytics reports** (SOL-35): `CHANNEL`, `EMAIL_GROUP`,
+  `FORM`, `FORM_INTEGRATION`, `FORM_CHANNEL`, `ANALYTICS_REPORT`, `ANALYTICS_REPORT_CHANNEL`,
+  plus `SLACK_CHANNEL.channel_id`. Unlike Waves 1–2, done in one step: nothing calls the
+  `/v1` routes yet, so there's no read cutover to stage — the data moves in SQL inside the
+  migration, the legacy routes (the only live callers) are switched over in the same
+  change, and the moved columns are dropped straight away.
 
 Rollout for whichever wave: expand (new tables + backfill) → reconcile backfill against old
 columns → cut existing API reads *and* writes over to new tables (contract unchanged) →
@@ -293,3 +446,18 @@ resolution above).
 | 7 | Cut over reads *and* writes to `SITE` (API contract unchanged) | ✅ Done | `feat/SOL-22-cutover-site-reads-writes`, PR #24 — verified live in production (matched `clients`/`sites` `ga4_property_id` values, deploy succeeded) |
 | 8 | Drop the now-dead `clients.ga4_property_id`/`sanity_*`/`github_*`; remove the temporary CI backfill step from step 6 | ✅ Done | `feat/SOL-22-drop-legacy-client-columns` — migration `0008_drop_legacy_client_columns.sql`; `scripts/backfill-sites.ts` deleted (its job is done and it referenced a column that no longer exists) |
 | 9 | Update downstream callers (`sol-notificaiton-service`, `sol-integration-service`) to use the new contract | ⬜ Not started, not currently scheduled | — |
+
+## Wave 3 Rollout Progress
+
+Done as a single step rather than expand → backfill → cutover → drop: no service calls the
+`/v1` routes yet, so the only live readers/writers (the legacy routes) are switched over in
+the same change, and the data is copied in SQL inside the migration instead of a temporary
+CI backfill script. Both migrations are single `DO` blocks, so each applies atomically.
+
+| # | Step | Status | Where |
+|---|------|--------|-------|
+| 1 | Agree on target ERD | ✅ Done | Miro "sol-api Entity Model + forms and channels (proposed)"; sol-brain `sol-gate/03-data-model.md` |
+| 2 | New tables, `slack_channels.channel_id`/`channel_type`, same-client and type-consistency composite FKs; copy Slack channels, default "Client email" channels and analytics reports into them; self-check | ✅ Done | `feat/SOL-35-forms-channels-schema` — `0010_forms_and_channels.sql` |
+| 3 | Switch the legacy routes and `/v1` Slack/sites routes to the new tables; new clients get a default channel | ✅ Done | Same branch |
+| 4 | Drop `slack_channels.client_id`/`name`/`description` and `sites.analytics_recipients`/`analytics_reports_enabled` | ✅ Done | Same branch — `0011_drop_moved_columns.sql` |
+| 5 | New endpoints for Sol Gate / the analytics scheduler (load form, resolve channels, due reports) | ⬜ Not started | SOL-36 |

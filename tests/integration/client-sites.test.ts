@@ -81,8 +81,6 @@ describe("GET /v1/clients/:clientId/sites/:siteId", () => {
         domain: "acme.com",
         stagingDomain: null,
         ga4PropertyId: "111222333",
-        analyticsRecipients: [],
-        analyticsReportsEnabled: true,
         createdAt: expect.any(String),
         updatedAt: expect.any(String),
       });

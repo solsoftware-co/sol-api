@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/v1/sites?active=true&analyticsReportEnabled=true
+  url: {{baseUrl}}/v1/sites?active=true
   body: none
   auth: none
 }
@@ -15,8 +15,10 @@ headers {
 }
 
 docs {
-  Flat, cross-tenant — every client's sites in one response. Both query
-  params are optional; remove either to stop filtering on it. Never
+  Flat, cross-tenant — every client's sites in one response. The active
+  query param is optional; remove it to stop filtering. (The old
+  analyticsReportEnabled filter went with sites.analytics_* in SOL-35 —
+  scheduled reports live on analytics_reports now.) Never
   includes credentials, not even the service account email — there is no
   ?include= on this route.
 }

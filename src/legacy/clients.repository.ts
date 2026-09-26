@@ -8,6 +8,8 @@ import {
   clients,
   google_service_accounts,
   slack_channels,
+  channels,
+  email_groups,
   sites,
   sanity_configs,
   github_repos,
@@ -43,11 +45,16 @@ async function getGoogleServiceAccount(
   return rows[0] ?? null;
 }
 
+// A client's Slack channels are found through their channels rows (SOL-35).
+function clientChannelIds(db: Db, clientId: string) {
+  return db.select({ id: channels.id }).from(channels).where(eq(channels.client_id, clientId));
+}
+
 async function getSlackChannel(db: Db, clientId: string): Promise<{ webhook_url: string } | null> {
   const rows = await db
     .select({ webhook_url: slack_channels.webhook_url })
     .from(slack_channels)
-    .where(eq(slack_channels.client_id, clientId))
+    .where(inArray(slack_channels.channel_id, clientChannelIds(db, clientId)))
     .orderBy(slack_channels.created_at)
     .limit(1);
   return rows[0] ?? null;
@@ -274,6 +281,8 @@ export async function insertClient(
       .returning();
     const client = rows[0];
 
+    await insertDefaultEmailChannel(db, data.id, data.email);
+
     let googleEmail: string | null = null;
     let googleKey: string | null = null;
     if (data.google_service_account_email && data.google_service_account_key) {
@@ -288,11 +297,7 @@ export async function insertClient(
 
     let slackWebhookUrl: string | null = null;
     if (data.slack_webhook_url) {
-      await db.insert(slack_channels).values({
-        client_id: data.id,
-        name: "Default",
-        webhook_url: data.slack_webhook_url,
-      });
+      await insertDefaultSlackChannel(db, data.id, data.slack_webhook_url);
       slackWebhookUrl = data.slack_webhook_url;
     }
 
@@ -402,13 +407,74 @@ async function applySlackChannelUpdate(db: Db, clientId: string, data: Record<st
       await db
         .update(slack_channels)
         .set({ webhook_url: webhookUrl, updated_at: sql`now()` })
-        .where(eq(slack_channels.client_id, clientId));
+        .where(inArray(slack_channels.channel_id, clientChannelIds(db, clientId)));
     } else {
-      await db.insert(slack_channels).values({ client_id: clientId, name: "Default", webhook_url: webhookUrl });
+      await insertDefaultSlackChannel(db, clientId, webhookUrl);
     }
   } else if (existing) {
-    await db.delete(slack_channels).where(eq(slack_channels.client_id, clientId));
+    await deleteSlackChannels(db, clientId);
   }
+}
+
+// Wave 3 (SOL-35): a Slack channel is a channels row (name/description,
+// type "slack") plus its slack_channels configuration row. The legacy
+// single-webhook model maps onto one channel named "Default".
+async function insertDefaultSlackChannel(db: Db, clientId: string, webhookUrl: string): Promise<void> {
+  const [channel] = await db
+    .insert(channels)
+    .values({ client_id: clientId, type: "slack", name: "Default" })
+    .returning({ id: channels.id });
+  await db.insert(slack_channels).values({ channel_id: channel.id, webhook_url: webhookUrl });
+}
+
+// Every client gets a default email channel holding clients.email (SOL-35) —
+// what migration 0010 created for existing clients. Nothing notifies it
+// implicitly; forms and reports have to be linked to it.
+export const DEFAULT_EMAIL_CHANNEL_NAME = "Client email";
+
+async function insertDefaultEmailChannel(db: Db, clientId: string, email: string): Promise<void> {
+  const [channel] = await db
+    .insert(channels)
+    .values({ client_id: clientId, type: "email", name: DEFAULT_EMAIL_CHANNEL_NAME })
+    .returning({ id: channels.id });
+  await db.insert(email_groups).values({ channel_id: channel.id, email_addresses: [email] });
+}
+
+// Keeps the default channel following clients.email: the old address is
+// swapped for the new one, leaving any other addresses in the group alone.
+async function applyDefaultEmailChannelUpdate(db: Db, clientId: string, oldEmail: string, newEmail: string): Promise<void> {
+  if (oldEmail === newEmail) return;
+  await db
+    .update(email_groups)
+    .set({ email_addresses: sql`array_replace(${email_groups.email_addresses}, ${oldEmail}, ${newEmail})` })
+    .where(
+      inArray(
+        email_groups.channel_id,
+        db
+          .select({ id: channels.id })
+          .from(channels)
+          .where(and(eq(channels.client_id, clientId), eq(channels.name, DEFAULT_EMAIL_CHANNEL_NAME)))
+      )
+    );
+}
+
+// Removes a client's Slack configuration and the channels rows it configured,
+// unless a form or analytics report still links to one (a Wave 3 feature the
+// legacy routes don't know about) — that channel is kept, now unconfigured.
+async function deleteSlackChannels(db: Db, clientId: string): Promise<void> {
+  const removed = await db
+    .delete(slack_channels)
+    .where(inArray(slack_channels.channel_id, clientChannelIds(db, clientId)))
+    .returning({ channel_id: slack_channels.channel_id });
+  const channelIds = removed.map((r) => r.channel_id);
+  if (channelIds.length === 0) return;
+  await db.delete(channels).where(
+    and(
+      inArray(channels.id, channelIds),
+      sql`NOT EXISTS (SELECT 1 FROM form_channels fc WHERE fc.channel_id = ${channels.id})`,
+      sql`NOT EXISTS (SELECT 1 FROM analytics_report_channels arc WHERE arc.channel_id = ${channels.id})`
+    )
+  );
 }
 
 async function applySiteGa4Update(db: Db, siteId: string, data: Record<string, unknown>): Promise<void> {
@@ -510,7 +576,7 @@ export async function updateClient(
   }
 
   const existingClient = await db
-    .select({ id: clients.id })
+    .select({ id: clients.id, email: clients.email })
     .from(clients)
     .where(eq(clients.id, id))
     .limit(1);
@@ -518,6 +584,9 @@ export async function updateClient(
 
   if (Object.keys(columnUpdates).length > 0) {
     await db.update(clients).set(columnUpdates).where(eq(clients.id, id));
+  }
+  if (typeof columnUpdates.email === "string") {
+    await applyDefaultEmailChannelUpdate(db, id, existingClient[0].email, columnUpdates.email);
   }
 
   if (touchesGoogle) {

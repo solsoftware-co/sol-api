@@ -37,7 +37,9 @@ async function deleteTestClient<ArrayMode extends boolean, FullResults extends b
   await sql`DELETE FROM sanity_configs WHERE site_id IN (SELECT id FROM sites WHERE client_id = ${id})`;
   await sql`DELETE FROM github_repos WHERE site_id IN (SELECT id FROM sites WHERE client_id = ${id})`;
   await sql`DELETE FROM sites WHERE client_id = ${id}`;
-  await sql`DELETE FROM slack_channels WHERE client_id = ${id}`;
+  await sql`DELETE FROM slack_channels WHERE channel_id IN (SELECT id FROM channels WHERE client_id = ${id})`;
+  await sql`DELETE FROM email_groups WHERE channel_id IN (SELECT id FROM channels WHERE client_id = ${id})`;
+  await sql`DELETE FROM channels WHERE client_id = ${id}`;
   await sql`DELETE FROM google_service_accounts WHERE client_id = ${id}`;
   await sql`DELETE FROM integrations WHERE client_id = ${id}`;
   await sql`DELETE FROM clients WHERE id = ${id}`;
@@ -54,8 +56,11 @@ beforeAll(async () => {
     ON CONFLICT (id) DO NOTHING
   `;
   await sql`
-    INSERT INTO slack_channels (client_id, name, webhook_url)
-    VALUES (${TEST_CLIENT_ID}, 'Default', 'https://hooks.slack.com/services/T000/B000/XXXX')
+    WITH channel AS (
+      INSERT INTO channels (client_id, type, name) VALUES (${TEST_CLIENT_ID}, 'slack', 'Default') RETURNING id
+    )
+    INSERT INTO slack_channels (channel_id, webhook_url)
+    SELECT id, 'https://hooks.slack.com/services/T000/B000/XXXX' FROM channel
   `;
   await sql`
     INSERT INTO sites (client_id, name, ga4_property_id)

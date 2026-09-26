@@ -1,5 +1,5 @@
 import { eq, and } from "drizzle-orm";
-import { slack_channels } from "../lib/schema.js";
+import { slack_channels, channels } from "../lib/schema.js";
 import type { Db } from "../lib/db.js";
 
 export interface SlackChannelRow {
@@ -20,15 +20,18 @@ export async function getSlackChannelById(
   const rows = await db
     .select({
       id: slack_channels.id,
-      client_id: slack_channels.client_id,
-      name: slack_channels.name,
-      description: slack_channels.description,
+      client_id: channels.client_id,
+      // Owner/name/description moved to the channel this row configures
+      // (SOL-35); the response shape is unchanged.
+      name: channels.name,
+      description: channels.description,
       webhook_url: slack_channels.webhook_url,
       created_at: slack_channels.created_at,
       updated_at: slack_channels.updated_at,
     })
     .from(slack_channels)
-    .where(and(eq(slack_channels.id, channelId), eq(slack_channels.client_id, clientId)))
+    .innerJoin(channels, eq(channels.id, slack_channels.channel_id))
+    .where(and(eq(slack_channels.id, channelId), eq(channels.client_id, clientId)))
     .limit(1);
   return rows[0] ?? null;
 }

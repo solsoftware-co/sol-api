@@ -18,6 +18,13 @@ export default defineConfig({
     "sites",
     "sanity_configs",
     "github_repos",
+    "channels",
+    "email_groups",
+    "forms",
+    "form_integrations",
+    "form_channels",
+    "analytics_reports",
+    "analytics_report_channels",
   ],
   dbCredentials: {
     url: process.env.DATABASE_URL!,
