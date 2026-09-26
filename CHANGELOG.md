@@ -1,3 +1,16 @@
+# [1.20.0](https://github.com/solsoftware-co/sol-api/compare/v1.19.0...v1.20.0) (2026-09-26)
+
+
+### Bug Fixes
+
+* restore migration 0011's column drops (SOL-35) ([adefd4a](https://github.com/solsoftware-co/sol-api/commit/adefd4a76fe67a5453a8c747cf8f6ade45d2f828))
+
+
+### Features
+
+* add form_channel_integrations and form_channels.message (SOL-35) ([2e54937](https://github.com/solsoftware-co/sol-api/commit/2e54937c7b9bff6972a4900cadb1ce0b005cf1ac))
+* add forms, channels and analytics reports (SOL-35) ([1afb7c8](https://github.com/solsoftware-co/sol-api/commit/1afb7c86b8c8d1177511199355f25df79fe76c63))
+
 # [1.19.0](https://github.com/solsoftware-co/sol-api/compare/v1.18.0...v1.19.0) (2026-09-22)
 
 
