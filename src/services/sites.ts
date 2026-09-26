@@ -11,8 +11,6 @@ export interface SiteFlatResponse {
   clientId: string;
   name: string;
   ga4PropertyId: string | null;
-  analyticsRecipients: string[];
-  analyticsReportsEnabled: boolean;
   clientTimezone: string;
 }
 
@@ -24,8 +22,6 @@ export interface ClientSiteResponse {
   domain: string | null;
   stagingDomain: string | null;
   ga4PropertyId: string | null;
-  analyticsRecipients: string[];
-  analyticsReportsEnabled: boolean;
   createdAt: string;
   updatedAt: string;
   googleServiceAccount?: { email: string; key: string };
@@ -45,19 +41,17 @@ function parseBooleanParam(value: string | undefined, param: string): boolean | 
   throw new InvalidBooleanParamError(param);
 }
 
-export function parseSitesQuery(query: {
-  active?: string;
-  analyticsReportEnabled?: string;
-}): { active?: boolean; analyticsReportsEnabled?: boolean } {
+// analyticsReportEnabled was removed with the sites.analytics_* columns
+// (SOL-35) — which reports exist and are due now lives on analytics_reports.
+export function parseSitesQuery(query: { active?: string }): { active?: boolean } {
   return {
     active: parseBooleanParam(query.active, "active"),
-    analyticsReportsEnabled: parseBooleanParam(query.analyticsReportEnabled, "analyticsReportEnabled"),
   };
 }
 
 export async function listSites(
   db: Db,
-  opts: { active?: boolean; analyticsReportsEnabled?: boolean }
+  opts: { active?: boolean }
 ): Promise<SiteFlatResponse[]> {
   const rows = await listSitesFlat(db, opts);
   return rows.map((row) => snakeToCamelKeys(row));

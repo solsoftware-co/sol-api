@@ -9,10 +9,7 @@ const sites = new Hono<AppEnv>();
 sites.get("/", async (c) => {
   let opts;
   try {
-    opts = parseSitesQuery({
-      active: c.req.query("active"),
-      analyticsReportEnabled: c.req.query("analyticsReportEnabled"),
-    });
+    opts = parseSitesQuery({ active: c.req.query("active") });
   } catch (err) {
     if (err instanceof InvalidBooleanParamError) {
       return validationErrorResponse(c, err.message);

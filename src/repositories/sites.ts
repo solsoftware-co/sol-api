@@ -7,8 +7,6 @@ export interface SiteFlatRow {
   client_id: string;
   name: string;
   ga4_property_id: string | null;
-  analytics_recipients: string[];
-  analytics_reports_enabled: boolean;
   client_timezone: string;
 }
 
@@ -19,13 +17,10 @@ export interface SiteFlatRow {
 // escape hatch here.
 export async function listSitesFlat(
   db: Db,
-  opts: { active?: boolean; analyticsReportsEnabled?: boolean } = {}
+  opts: { active?: boolean } = {}
 ): Promise<SiteFlatRow[]> {
   const conditions = [
     opts.active !== undefined ? eq(clients.active, opts.active) : undefined,
-    opts.analyticsReportsEnabled !== undefined
-      ? eq(sites.analytics_reports_enabled, opts.analyticsReportsEnabled)
-      : undefined,
   ].filter((c): c is NonNullable<typeof c> => c !== undefined);
 
   return db
@@ -34,8 +29,6 @@ export async function listSitesFlat(
       client_id: sites.client_id,
       name: sites.name,
       ga4_property_id: sites.ga4_property_id,
-      analytics_recipients: sites.analytics_recipients,
-      analytics_reports_enabled: sites.analytics_reports_enabled,
       client_timezone: clients.timezone,
     })
     .from(sites)
@@ -51,8 +44,6 @@ export interface ClientSiteRow {
   domain: string | null;
   staging_domain: string | null;
   ga4_property_id: string | null;
-  analytics_recipients: string[];
-  analytics_reports_enabled: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -70,8 +61,6 @@ const SITE_COLUMNS = {
   domain: sites.domain,
   staging_domain: sites.staging_domain,
   ga4_property_id: sites.ga4_property_id,
-  analytics_recipients: sites.analytics_recipients,
-  analytics_reports_enabled: sites.analytics_reports_enabled,
   created_at: sites.created_at,
   updated_at: sites.updated_at,
 };

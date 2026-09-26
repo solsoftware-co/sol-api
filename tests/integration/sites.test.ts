@@ -18,7 +18,6 @@ const ACTIVE_CLIENT_ID = `test-sites-active-${Date.now()}`;
 const INACTIVE_CLIENT_ID = `test-sites-inactive-${Date.now()}`;
 let ACTIVE_SITE_ID: string;
 let INACTIVE_CLIENT_SITE_ID: string;
-let DISABLED_REPORTS_SITE_ID: string;
 
 function authed(init: RequestInit = {}): RequestInit {
   return { ...init, headers: { ...(init.headers as Record<string, string>), "X-API-Key": API_KEY } };
@@ -47,14 +46,6 @@ beforeAll(async () => {
     name: "Acme Site",
     ga4PropertyId: "111222333",
     ga4ServiceAccountId: gsaId,
-    analyticsRecipients: ["reports@acme.com"],
-    analyticsReportsEnabled: true,
-  });
-
-  DISABLED_REPORTS_SITE_ID = await insertTestSite(sql, {
-    clientId: ACTIVE_CLIENT_ID,
-    name: "Acme Staging Site",
-    analyticsReportsEnabled: false,
   });
 
   INACTIVE_CLIENT_SITE_ID = await insertTestSite(sql, {
@@ -83,8 +74,6 @@ describe("GET /v1/sites", () => {
         clientId: ACTIVE_CLIENT_ID,
         name: "Acme Site",
         ga4PropertyId: "111222333",
-        analyticsRecipients: ["reports@acme.com"],
-        analyticsReportsEnabled: true,
         clientTimezone: "America/Denver",
       });
     })
@@ -93,7 +82,7 @@ describe("GET /v1/sites", () => {
   it(
     "never includes any credential-shaped key, regardless of query params",
     skipIfNoDb(async () => {
-      for (const qs of ["", "?active=true", "?analyticsReportEnabled=true", "?active=false"]) {
+      for (const qs of ["", "?active=true", "?active=false"]) {
         const res = await app.request(`/v1/sites${qs}`, authed(), TEST_ENV);
         const body = (await res.json()) as any;
         for (const item of body.data) {
@@ -125,23 +114,8 @@ describe("GET /v1/sites", () => {
     })
   );
 
-  it(
-    "analyticsReportEnabled=false filters to only disabled sites",
-    skipIfNoDb(async () => {
-      const res = await app.request("/v1/sites?analyticsReportEnabled=false", authed(), TEST_ENV);
-      const body = (await res.json()) as any;
-      expect(body.data.some((s: any) => s.id === DISABLED_REPORTS_SITE_ID)).toBe(true);
-      expect(body.data.some((s: any) => s.id === ACTIVE_SITE_ID)).toBe(false);
-    })
-  );
-
   it("returns 422 for a non-boolean active value", async () => {
     const res = await app.request("/v1/sites?active=yes", authed(), TEST_ENV);
-    expect(res.status).toBe(422);
-  });
-
-  it("returns 422 for a non-boolean analyticsReportEnabled value", async () => {
-    const res = await app.request("/v1/sites?analyticsReportEnabled=nope", authed(), TEST_ENV);
     expect(res.status).toBe(422);
   });
 
