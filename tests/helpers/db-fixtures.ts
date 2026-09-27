@@ -83,6 +83,120 @@ export async function insertTestSlackChannel(
   return (rows[0] as { id: string }).id;
 }
 
+// A channel plus its configuration row (email_groups or slack_channels).
+export async function insertTestChannel(
+  sql: Sql,
+  opts: {
+    clientId: string;
+    type: "email" | "slack";
+    name: string;
+    description?: string | null;
+    emailAddresses?: string[];
+    webhookUrl?: string;
+  }
+): Promise<string> {
+  const rows = await sql`
+    INSERT INTO channels (client_id, type, name, description)
+    VALUES (${opts.clientId}, ${opts.type}, ${opts.name}, ${opts.description ?? null})
+    RETURNING id
+  `;
+  const channelId = (rows[0] as { id: string }).id;
+  if (opts.type === "email") {
+    await sql`
+      INSERT INTO email_groups (channel_id, email_addresses)
+      VALUES (${channelId}, ${opts.emailAddresses ?? ["group@example.com"]})
+    `;
+  } else {
+    await sql`
+      INSERT INTO slack_channels (channel_id, webhook_url)
+      VALUES (${channelId}, ${opts.webhookUrl ?? "https://hooks.slack.com/services/T000/B000/XXXX"})
+    `;
+  }
+  return channelId;
+}
+
+export async function insertTestForm(
+  sql: Sql,
+  opts: {
+    clientId: string;
+    name?: string;
+    payloadSchema?: Record<string, unknown>;
+    allowedOrigins?: string[];
+    integrations?: { integrationId: string; fieldMapping?: Record<string, unknown> }[];
+    channels?: {
+      channelId: string;
+      template?: string;
+      subject?: string | null;
+      includeFields?: string[] | null;
+      message?: string | null;
+      integrationIds?: string[];
+    }[];
+  }
+): Promise<string> {
+  const rows = await sql`
+    INSERT INTO forms (client_id, name, payload_schema, allowed_origins)
+    VALUES (
+      ${opts.clientId},
+      ${opts.name ?? "Test Form"},
+      ${JSON.stringify(opts.payloadSchema ?? {})},
+      ${opts.allowedOrigins ?? []}
+    )
+    RETURNING id
+  `;
+  const formId = (rows[0] as { id: string }).id;
+  for (const i of opts.integrations ?? []) {
+    await sql`
+      INSERT INTO form_integrations (form_id, integration_id, client_id, field_mapping)
+      VALUES (${formId}, ${i.integrationId}, ${opts.clientId}, ${JSON.stringify(i.fieldMapping ?? {})})
+    `;
+  }
+  for (const ch of opts.channels ?? []) {
+    await sql`
+      INSERT INTO form_channels (form_id, channel_id, client_id, template, subject, include_fields, message)
+      VALUES (
+        ${formId}, ${ch.channelId}, ${opts.clientId}, ${ch.template ?? "form_submission"},
+        ${ch.subject ?? null}, ${ch.includeFields ?? null}, ${ch.message ?? null}
+      )
+    `;
+    for (const integrationId of ch.integrationIds ?? []) {
+      await sql`
+        INSERT INTO form_channel_integrations (form_id, channel_id, integration_id)
+        VALUES (${formId}, ${ch.channelId}, ${integrationId})
+      `;
+    }
+  }
+  return formId;
+}
+
+export async function insertTestAnalyticsReport(
+  sql: Sql,
+  opts: {
+    clientId: string;
+    siteId: string;
+    enabled?: boolean;
+    cron?: string;
+    lookback?: string;
+    channelIds?: string[];
+  }
+): Promise<string> {
+  const rows = await sql`
+    INSERT INTO analytics_reports (client_id, site_id, enabled, cron, lookback)
+    VALUES (
+      ${opts.clientId}, ${opts.siteId}, ${opts.enabled ?? true},
+      ${opts.cron ?? "0 9 * * 2"}, ${opts.lookback ?? "last_week"}
+    )
+    RETURNING id
+  `;
+  const reportId = (rows[0] as { id: string }).id;
+  for (const channelId of opts.channelIds ?? []) {
+    await sql`
+      INSERT INTO analytics_report_channels (analytics_report_id, channel_id, client_id)
+      VALUES (${reportId}, ${channelId}, ${opts.clientId})
+    `;
+  }
+  return reportId;
+}
+
 type MailchimpChild = { apiKey?: string; listId?: string; serverPrefix?: string };
 type GoogleSheetsChild = {
   googleServiceAccountId: string;

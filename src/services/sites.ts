@@ -27,19 +27,9 @@ export interface ClientSiteResponse {
   googleServiceAccount?: { email: string; key: string };
 }
 
-export class InvalidBooleanParamError extends Error {
-  constructor(public readonly param: string) {
-    super(`${param} must be "true" or "false"`);
-    this.name = "InvalidBooleanParamError";
-  }
-}
+import { parseBooleanParam } from "../lib/query-params.js";
 
-function parseBooleanParam(value: string | undefined, param: string): boolean | undefined {
-  if (value === undefined) return undefined;
-  if (value === "true") return true;
-  if (value === "false") return false;
-  throw new InvalidBooleanParamError(param);
-}
+export { InvalidBooleanParamError } from "../lib/query-params.js";
 
 // analyticsReportEnabled was removed with the sites.analytics_* columns
 // (SOL-35) — which reports exist and are due now lives on analytics_reports.

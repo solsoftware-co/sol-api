@@ -65,10 +65,13 @@ export const google_service_accounts = pgTable("google_service_accounts", {
 // channel_type) → channels (id, type). An email channel can therefore only
 // ever have an email_groups row, never a slack_channels row (and vice versa),
 // and a channel's type can't be changed while it's configured.
+// Matches channels_type_check below.
+export type ChannelType = "email" | "slack";
+
 export const channels = pgTable("channels", {
   id: uuid("id").primaryKey().defaultRandom(),
   client_id: text("client_id").notNull(),
-  type: text("type").notNull(),
+  type: text("type").$type<ChannelType>().notNull(),
   name: text("name").notNull(),
   description: text("description"),
   created_at: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
@@ -300,8 +303,9 @@ export const form_channels = pgTable("form_channels", {
 
 // Which of a form's integrations a notification reports on — a many-to-many
 // inside the form_channels link (e.g. one email group hears only about
-// Mailchimp, another about Mailchimp and Google Sheets). No rows for a
-// form_channels link means "report every integration the form ran". The two
+// Mailchimp, another about Mailchimp and Google Sheets). Reporting is opt-in:
+// no rows for a form_channels link means the notification reports on NO
+// integrations (e.g. a plain "form submitted" message). The two
 // FKs guarantee a notification can only report integrations this form
 // actually runs; same-client scoping follows from both parents.
 export const form_channel_integrations = pgTable("form_channel_integrations", {
