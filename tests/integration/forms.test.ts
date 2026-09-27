@@ -30,6 +30,7 @@ function skipIfNoDb(testFn: () => Promise<void>): () => Promise<void> {
 }
 
 const CLIENT_ID = `test-forms-client-${Date.now()}`;
+const OTHER_CLIENT_ID = `test-forms-other-${Date.now()}`;
 let FORM_ID: string;
 let MAILCHIMP_ID: string;
 let GROUP_01_ID: string;
@@ -42,6 +43,7 @@ beforeAll(async () => {
   if (!DB_URL) return;
   const sql = neon(DB_URL);
   await insertTestClient(sql, { id: CLIENT_ID });
+  await insertTestClient(sql, { id: OTHER_CLIENT_ID });
   MAILCHIMP_ID = await insertTestIntegration(sql, {
     clientId: CLIENT_ID,
     type: "mailchimp",
@@ -73,13 +75,14 @@ beforeAll(async () => {
 afterAll(async () => {
   if (!DB_URL) return;
   await deleteTestClientCascade(neon(DB_URL), CLIENT_ID);
+  await deleteTestClientCascade(neon(DB_URL), OTHER_CLIENT_ID);
 });
 
-describe("GET /v1/forms/:formId", () => {
+describe("GET /v1/clients/:clientId/forms/:formId", () => {
   it(
     "returns the form with its integrations and notifications, camelCase",
     skipIfNoDb(async () => {
-      const res = await app.request(`/v1/forms/${FORM_ID}`, authed(), TEST_ENV);
+      const res = await app.request(`/v1/clients/${CLIENT_ID}/forms/${FORM_ID}`, authed(), TEST_ENV);
       expect(res.status).toBe(200);
       const body = (await res.json()) as any;
       expect(body.data).toMatchObject({
@@ -117,7 +120,7 @@ describe("GET /v1/forms/:formId", () => {
   it(
     "never includes credentials (integration keys, Slack webhooks)",
     skipIfNoDb(async () => {
-      const res = await app.request(`/v1/forms/${FORM_ID}`, authed(), TEST_ENV);
+      const res = await app.request(`/v1/clients/${CLIENT_ID}/forms/${FORM_ID}`, authed(), TEST_ENV);
       const text = await res.text();
       expect(text).not.toContain("mc-secret-key");
       expect(text).not.toContain("SECRET");
@@ -125,20 +128,28 @@ describe("GET /v1/forms/:formId", () => {
   );
 
   it(
+    "returns 404 for a form under another client",
+    skipIfNoDb(async () => {
+      const res = await app.request(`/v1/clients/${OTHER_CLIENT_ID}/forms/${FORM_ID}`, authed(), TEST_ENV);
+      expect(res.status).toBe(404);
+    })
+  );
+
+  it(
     "returns 404 for an unknown form",
     skipIfNoDb(async () => {
-      const res = await app.request("/v1/forms/00000000-0000-0000-0000-000000000000", authed(), TEST_ENV);
+      const res = await app.request(`/v1/clients/${CLIENT_ID}/forms/00000000-0000-0000-0000-000000000000`, authed(), TEST_ENV);
       expect(res.status).toBe(404);
     })
   );
 
   it("returns 404 for a non-UUID form id", async () => {
-    const res = await app.request("/v1/forms/not-a-uuid", authed(), TEST_ENV);
+    const res = await app.request(`/v1/clients/${CLIENT_ID}/forms/not-a-uuid`, authed(), TEST_ENV);
     expect(res.status).toBe(404);
   });
 
   it("returns 401 without X-API-Key", async () => {
-    const res = await app.request("/v1/forms/00000000-0000-0000-0000-000000000000", {}, TEST_ENV);
+    const res = await app.request(`/v1/clients/${CLIENT_ID}/forms/00000000-0000-0000-0000-000000000000`, {}, TEST_ENV);
     expect(res.status).toBe(401);
   });
 });

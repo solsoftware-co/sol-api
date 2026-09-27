@@ -407,7 +407,7 @@ Read-only `/v1` endpoints (no create/update yet):
 
 | Endpoint | Exposes | For |
 |---|---|---|
-| `GET /v1/forms/:formId` | `FORM` + its `FORM_INTEGRATION`s (with `fieldMapping`) + `FORM_CHANNEL`s (with `integrationIds` from `FORM_CHANNEL_INTEGRATION`; empty = none (opt-in)). Not client-scoped — Sol Gate only has the form id. No credentials. | Sol Gate |
+| `GET /v1/clients/:clientId/forms/:formId` | `FORM` + its `FORM_INTEGRATION`s (with `fieldMapping`) + `FORM_CHANNEL`s (with `integrationIds` from `FORM_CHANNEL_INTEGRATION`; empty = none (opt-in)). Client-scoped (a form under the wrong client is a 404) — Sol Gate's public URL carries both ids. No credentials. | Sol Gate |
 | `GET /v1/clients/:clientId/channels?ids=…` | A client's `CHANNEL`s, each with what's needed to deliver to it: `EMAIL_GROUP.email_addresses` or `SLACK_CHANNEL.webhook_url` | Resolving channels to recipients (Sol Gate, scheduler) |
 | `GET /v1/clients/:clientId/channels/:channelId` | One channel, same shape as the list (webhooks returned like an integration's credentials — every caller already holds the API key) | sol-notify's Slack lookup (SOL-13) |
 | `GET /v1/analytics-reports?enabled=&active=` | `ANALYTICS_REPORT`s with site, GA4 property, client timezone and `channelIds`. Flat, cross-tenant, like `/v1/sites`. | Analytics scheduler (SOL-12) |

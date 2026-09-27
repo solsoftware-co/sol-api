@@ -1,6 +1,6 @@
 import type { Db } from "../lib/db.js";
 import {
-  getFormById,
+  getClientForm,
   listFormIntegrations,
   listFormChannels,
   listFormChannelIntegrations,
@@ -41,8 +41,8 @@ export interface FormResponse {
 // response: what to validate, which integrations to run (and how to map
 // fields onto them), and which channels to notify (and about which
 // integrations). No credentials of any kind.
-export async function getForm(db: Db, formId: string): Promise<FormResponse | null> {
-  const form = await getFormById(db, formId);
+export async function getForm(db: Db, clientId: string, formId: string): Promise<FormResponse | null> {
+  const form = await getClientForm(db, clientId, formId);
   if (!form) return null;
 
   const [integrationRows, channelRows, reportRows] = await Promise.all([

@@ -1,4 +1,4 @@
-import { eq, asc } from "drizzle-orm";
+import { eq, and, asc } from "drizzle-orm";
 import {
   forms,
   form_integrations,
@@ -47,7 +47,7 @@ export interface FormChannelIntegrationRow {
 // Not client-scoped: Sol Gate resolves a form from the public submission URL,
 // which carries only the form id. The response (built in services/forms.ts)
 // carries the form's clientId instead.
-export async function getFormById(db: Db, formId: string): Promise<FormRow | null> {
+export async function getClientForm(db: Db, clientId: string, formId: string): Promise<FormRow | null> {
   const rows = await db
     .select({
       id: forms.id,
@@ -60,7 +60,7 @@ export async function getFormById(db: Db, formId: string): Promise<FormRow | nul
       updated_at: forms.updated_at,
     })
     .from(forms)
-    .where(eq(forms.id, formId))
+    .where(and(eq(forms.id, formId), eq(forms.client_id, clientId)))
     .limit(1);
   return rows[0] ?? null;
 }
