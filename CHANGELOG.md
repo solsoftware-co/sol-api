@@ -1,3 +1,10 @@
+# [1.21.0](https://github.com/solsoftware-co/sol-api/compare/v1.20.0...v1.21.0) (2026-09-27)
+
+
+### Features
+
+* read endpoints for forms, channels and analytics reports (SOL-36) ([cccb6b9](https://github.com/solsoftware-co/sol-api/commit/cccb6b95a96047f2926e2a6a42b078db791b2a35))
+
 # [1.20.0](https://github.com/solsoftware-co/sol-api/compare/v1.19.0...v1.20.0) (2026-09-26)
 
 
