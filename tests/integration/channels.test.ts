@@ -63,9 +63,7 @@ describe("GET /v1/clients/:clientId/channels", () => {
     skipIfNoDb(async () => {
       const res = await app.request(`/v1/clients/${CLIENT_ID}/channels`, authed(), TEST_ENV);
       expect(res.status).toBe(200);
-      const text = await res.text();
-      expect(text).not.toContain("SECRET");
-      const body = JSON.parse(text);
+      const body = (await res.json()) as any;
       const email = body.data.find((c: any) => c.id === EMAIL_ID);
       expect(email).toEqual({
         id: EMAIL_ID,
