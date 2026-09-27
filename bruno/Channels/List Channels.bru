@@ -1,0 +1,22 @@
+meta {
+  name: List Channels
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/clients/acme-corp/channels?ids=00000000-0000-0000-0000-000000000000
+  body: none
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+docs {
+  A client's channels — email channels include their email addresses. Remove
+  ?ids= to list all of them; with it, only the requested ids that belong to
+  this client come back (the "resolve channels to recipients" call). Email
+  channels include email.emailAddresses, Slack channels slack.webhookUrl.
+}

@@ -1,0 +1,22 @@
+meta {
+  name: List Analytics Reports
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/analytics-reports?enabled=true&active=true
+  body: none
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+docs {
+  Flat, cross-tenant — for the analytics scheduler. Each report: cron (in the
+  client's timezone), lookback, lastRunAt, the site's GA4 property, and the
+  channel ids it goes to. Both query params are optional. Never includes
+  credentials — GA4's are behind Get Client Site (Include Service Account).
+}

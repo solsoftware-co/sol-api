@@ -1,0 +1,24 @@
+meta {
+  name: Get Form
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/forms/00000000-0000-0000-0000-000000000000
+  body: none
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+docs {
+  Everything Sol Gate needs to process a submission: the form (payloadSchema,
+  allowedOrigins), its integrations (with fieldMapping) and its notification
+  channels (template, subject, includeFields, message, integrationIds — the
+  integrations each notification reports on; opt-in, so empty means none).
+  Not client-scoped: Sol Gate only knows
+  the form id. Never includes credentials.
+}

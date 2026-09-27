@@ -1,0 +1,21 @@
+meta {
+  name: Get Channel
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/v1/clients/acme-corp/channels/00000000-0000-0000-0000-000000000000
+  body: none
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+docs {
+  One channel, full object: email channels include email.emailAddresses,
+  Slack channels include slack.webhookUrl (for sol-notify's Slack lookup by
+  channel id, SOL-13). Same shape as each item in List Channels.
+}

@@ -92,7 +92,7 @@ erDiagram
         uuid id PK
         uuid channel_id FK "Wave 3 — which CHANNEL this configures; owner/name/description live there"
         text channel_type "always 'slack' — see type-consistency note"
-        text webhook_url "secret — excluded from list queries"
+        text webhook_url "secret — API-key callers only"
     }
 
     INTEGRATION {
@@ -354,8 +354,12 @@ template registry, and `message` is a fixed string with no substitution.
 on** — a many-to-many *inside* the `FORM_CHANNEL` link, so it's a child table rather than a
 column: a `uuid[]` couldn't carry foreign keys. Its two FKs guarantee a notification can only
 report integrations the form actually runs (`→ FORM_INTEGRATION`) for a channel the form
-actually notifies (`→ FORM_CHANNEL`); same-client scoping follows from both parents. No rows
-for a `FORM_CHANNEL` means "report every integration the form ran".
+actually notifies (`→ FORM_CHANNEL`); same-client scoping follows from both parents.
+
+**Reporting is opt-in:** no rows for a `FORM_CHANNEL` means the notification reports on **no**
+integrations — a notification can have nothing to do with them (e.g. "form 01 just ran
+successfully!"). To report on every integration, list each one; a notification never reports
+on an integration nobody explicitly linked to it.
 
 **When notifications fire:** for now, only when the form's integrations succeed. Failure
 notifications (and a per-link `notify_on`) are deliberately deferred.
@@ -371,7 +375,7 @@ and to a Google Sheet (all six fields), then notifying three channels:
 | `FORM_CHANNEL` → Email group 01 | subject "New Mailchimp subscriber", `include_fields` `{firstName, lastName, email}` |
 | `FORM_CHANNEL` → Email group 02 | subject "Form 01 submission", `include_fields` NULL (all) |
 | `FORM_CHANNEL` → Slack `#leads` | subject NULL, `message` "form 01 just ran successfully!" |
-| `FORM_CHANNEL_INTEGRATION` | (group 01, Mailchimp); (group 02, Mailchimp); (group 02, Google Sheets) — no rows for Slack |
+| `FORM_CHANNEL_INTEGRATION` | (group 01, Mailchimp); (group 02, Mailchimp); (group 02, Google Sheets) — no rows for Slack, so its message reports on no integrations |
 
 Not yet expressible: combining fields into one integration field (e.g. a single `NAME`
 merge field holding "first last") — `field_mapping` maps field to field. A small fixed set of
@@ -396,6 +400,17 @@ old service's recipient fallback ended up). Schedule matches the old Inngest job
 the old job fired Tuesday 00:00 UTC and slept until the next 9am business day) with
 `last_week`. The old service's weekend/holiday skipping is not modeled; the new scheduler
 (SOL-12) decides whether to keep it.
+
+### Reading the Wave 3 tables (SOL-36)
+
+Read-only `/v1` endpoints (no create/update yet):
+
+| Endpoint | Exposes | For |
+|---|---|---|
+| `GET /v1/forms/:formId` | `FORM` + its `FORM_INTEGRATION`s (with `fieldMapping`) + `FORM_CHANNEL`s (with `integrationIds` from `FORM_CHANNEL_INTEGRATION`; empty = none (opt-in)). Not client-scoped — Sol Gate only has the form id. No credentials. | Sol Gate |
+| `GET /v1/clients/:clientId/channels?ids=…` | A client's `CHANNEL`s, each with what's needed to deliver to it: `EMAIL_GROUP.email_addresses` or `SLACK_CHANNEL.webhook_url` | Resolving channels to recipients (Sol Gate, scheduler) |
+| `GET /v1/clients/:clientId/channels/:channelId` | One channel, same shape as the list (webhooks returned like an integration's credentials — every caller already holds the API key) | sol-notify's Slack lookup (SOL-13) |
+| `GET /v1/analytics-reports?enabled=&active=` | `ANALYTICS_REPORT`s with site, GA4 property, client timezone and `channelIds`. Flat, cross-tenant, like `/v1/sites`. | Analytics scheduler (SOL-12) |
 
 ### Same-client composite FKs (Wave 3)
 
