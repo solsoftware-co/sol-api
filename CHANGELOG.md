@@ -1,3 +1,10 @@
+# [1.22.0](https://github.com/solsoftware-co/sol-api/compare/v1.21.0...v1.22.0) (2026-09-29)
+
+
+### Features
+
+* per-form API keys for Sol Gate (SOL-42) ([e5cf670](https://github.com/solsoftware-co/sol-api/commit/e5cf67014da4cbb9f3af9a3a67b70da09d1d2513))
+
 # [1.21.0](https://github.com/solsoftware-co/sol-api/compare/v1.20.0...v1.21.0) (2026-09-27)
 
 
