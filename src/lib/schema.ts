@@ -10,6 +10,7 @@ import {
   primaryKey,
   unique,
   check,
+  index,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -329,6 +330,32 @@ export const form_channel_integrations = pgTable("form_channel_integrations", {
   }),
 ]);
 
+// SOL-42: per-form API keys for Sol Gate's callers. A leaked key only grants
+// "submit to this one form", and a form can hold several keys so rotation
+// needs no downtime. Only the SHA-256 of the key is stored — keys are 256-bit
+// random values, not passwords, so a slow KDF buys nothing. key_prefix is the
+// start of the key, for recognizing it in lists and logs. Revoking sets
+// revoked_at (soft delete keeps the audit trail).
+export const form_api_keys = pgTable("form_api_keys", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  client_id: text("client_id").notNull(),
+  form_id: uuid("form_id").notNull(),
+  name: text("name").notNull(),
+  key_prefix: text("key_prefix").notNull(),
+  key_hash: text("key_hash").notNull(),
+  created_at: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
+  revoked_at: timestamp("revoked_at", { withTimezone: true, mode: "string" }),
+  expires_at: timestamp("expires_at", { withTimezone: true, mode: "string" }),
+}, (table) => [
+  foreignKey({
+    columns: [table.client_id, table.form_id],
+    foreignColumns: [forms.client_id, forms.id],
+    name: "form_api_keys_client_id_form_id_fkey",
+  }),
+  unique("form_api_keys_key_hash_key").on(table.key_hash),
+  index("form_api_keys_client_id_form_id_idx").on(table.client_id, table.form_id),
+]);
+
 // A site's scheduled analytics report. cron is read in the client's timezone
 // (clients.timezone); lookback is a named period preset rather than a raw
 // duration ("rolling 30 days" vs "previous calendar month" is otherwise
@@ -453,3 +480,6 @@ export type NewAnalyticsReport = typeof analytics_reports.$inferInsert;
 
 export type AnalyticsReportChannel = typeof analytics_report_channels.$inferSelect;
 export type NewAnalyticsReportChannel = typeof analytics_report_channels.$inferInsert;
+
+export type FormApiKey = typeof form_api_keys.$inferSelect;
+export type NewFormApiKey = typeof form_api_keys.$inferInsert;

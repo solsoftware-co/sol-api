@@ -1,0 +1,21 @@
+meta {
+  name: List Form API Keys
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/v1/clients/acme-corp/forms/00000000-0000-0000-0000-000000000000/api-keys
+  body: none
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+docs {
+  Every key on the form, revoked and expired ones included:
+  { id, name, keyPrefix, createdAt, revokedAt, expiresAt }. Never the key or
+  its hash.
+}
