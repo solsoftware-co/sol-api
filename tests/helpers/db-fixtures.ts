@@ -168,6 +168,31 @@ export async function insertTestForm(
   return formId;
 }
 
+// A key row inserted directly, for states the API can't produce (a key that's
+// already expired). keyHash must be unique across the table.
+export async function insertTestFormApiKey(
+  sql: Sql,
+  opts: {
+    clientId: string;
+    formId: string;
+    keyHash: string;
+    name?: string;
+    keyPrefix?: string;
+    revokedAt?: string | null;
+    expiresAt?: string | null;
+  }
+): Promise<string> {
+  const rows = await sql`
+    INSERT INTO form_api_keys (client_id, form_id, name, key_prefix, key_hash, revoked_at, expires_at)
+    VALUES (
+      ${opts.clientId}, ${opts.formId}, ${opts.name ?? "Test key"}, ${opts.keyPrefix ?? "sgk_test"},
+      ${opts.keyHash}, ${opts.revokedAt ?? null}, ${opts.expiresAt ?? null}
+    )
+    RETURNING id
+  `;
+  return (rows[0] as { id: string }).id;
+}
+
 export async function insertTestAnalyticsReport(
   sql: Sql,
   opts: {
@@ -272,6 +297,7 @@ export async function deleteTestClientCascade(
   sql: Sql,
   clientId: string
 ): Promise<void> {
+  await sql`DELETE FROM form_api_keys WHERE client_id = ${clientId}`;
   await sql`DELETE FROM form_channel_integrations WHERE form_id IN (SELECT id FROM forms WHERE client_id = ${clientId})`;
   await sql`DELETE FROM form_channels WHERE client_id = ${clientId}`;
   await sql`DELETE FROM form_integrations WHERE client_id = ${clientId}`;

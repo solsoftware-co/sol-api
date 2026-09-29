@@ -42,6 +42,7 @@ erDiagram
     CHANNEL ||--o{ FORM_CHANNEL : "used by"
     FORM_CHANNEL ||--o{ FORM_CHANNEL_INTEGRATION : "reports on"
     FORM_INTEGRATION ||--o{ FORM_CHANNEL_INTEGRATION : "reported by"
+    FORM ||--o{ FORM_API_KEY : "authenticated by"
     SITE ||--o{ ANALYTICS_REPORT : "has"
     ANALYTICS_REPORT ||--o{ ANALYTICS_REPORT_CHANNEL : "sends to"
     CHANNEL ||--o{ ANALYTICS_REPORT_CHANNEL : "used by"
@@ -180,6 +181,17 @@ erDiagram
         uuid form_id PK
         uuid channel_id PK "FK (form_id, channel_id) to FORM_CHANNEL"
         uuid integration_id PK "FK (form_id, integration_id) to FORM_INTEGRATION"
+    }
+
+    FORM_API_KEY {
+        uuid id PK
+        text client_id "same-client FK (client_id, form_id) to FORM"
+        uuid form_id
+        text name "which site holds the key"
+        text key_prefix "first 12 chars, e.g. sgk_AbCd1234"
+        text key_hash UK "SHA-256 hex of the key; plaintext never stored"
+        timestamptz revoked_at "NULL = not revoked"
+        timestamptz expires_at "NULL = never expires"
     }
 
     ANALYTICS_REPORT {
@@ -386,6 +398,29 @@ configures, which may not map to any one website. Where it can be called from is
 `allowed_origins`, not a site relationship. If grouping forms by site is ever wanted, an
 optional `site_id` can be added then.
 
+### FORM_API_KEY (SOL-42)
+
+Per-form API keys for Sol Gate's callers (client Next.js servers), replacing one key per
+environment for every form: a leaked key only grants "submit to this one form", and a form
+can hold several keys, so rotation needs no downtime (create the new key, deploy it, revoke
+the old one).
+
+- **Format:** `sgk_` + 32 random bytes, base64url (47 characters). The prefix makes keys
+  easy to spot, including for secret scanners. `key_prefix` holds the first 12 characters
+  for recognizing a key in lists and logs.
+- **Only the SHA-256 is stored** (`key_hash`, `UNIQUE`). The keys are 256-bit random values,
+  not passwords, so bcrypt/scrypt would add nothing (and they're slow on Workers). The
+  plaintext appears once, in the create response.
+- **Revoking is a soft delete** (`revoked_at`) that keeps the audit trail. `expires_at` is
+  optional. A key is *active* when it's neither revoked nor expired (checked against the
+  database clock).
+- **sol-api verifies; hashes never leave it.** Sol Gate sends the key it received to the
+  verify endpoint and gets back only yes/no (plus the matched key's id, for its logs).
+  sol-api hashes the key and looks it up by the `UNIQUE key_hash` index, scoped to the
+  client, form and active keys. No response ever contains a key hash, so there's nothing
+  for a caller to log, cache or pass on by mistake. The cost is one extra internal call per
+  submission, which Sol Gate can run alongside the form lookup.
+
 ### ANALYTICS_REPORT, ANALYTICS_REPORT_CHANNEL (Wave 3)
 
 Replaces the dropped `SITE.analytics_recipients`/`analytics_reports_enabled` with a report per site that
@@ -411,6 +446,16 @@ Read-only `/v1` endpoints (no create/update yet):
 | `GET /v1/clients/:clientId/channels?ids=…` | A client's `CHANNEL`s, each with what's needed to deliver to it: `EMAIL_GROUP.email_addresses` or `SLACK_CHANNEL.webhook_url` | Resolving channels to recipients (Sol Gate, scheduler) |
 | `GET /v1/clients/:clientId/channels/:channelId` | One channel, same shape as the list (webhooks returned like an integration's credentials — every caller already holds the API key) | sol-notify's Slack lookup (SOL-13) |
 | `GET /v1/analytics-reports?enabled=&active=` | `ANALYTICS_REPORT`s with site, GA4 property, client timezone and `channelIds`. Flat, cross-tenant, like `/v1/sites`. | Analytics scheduler (SOL-12) |
+
+`FORM_API_KEY` (SOL-42) adds the first write endpoints on the Wave 3 tables. All are
+client-scoped (a form under the wrong client is a 404):
+
+| Endpoint | Does | For |
+|---|---|---|
+| `POST /v1/clients/:clientId/forms/:formId/api-keys` `{ name, expiresAt? }` | Creates a key → `201 { id, name, keyPrefix, key, createdAt, expiresAt }`. The only response that ever contains the plaintext `key`. | Setting up a site |
+| `GET /v1/clients/:clientId/forms/:formId/api-keys` | Every key, revoked and expired included: `{ id, name, keyPrefix, createdAt, revokedAt, expiresAt }`. Never the key or its hash. | Admin |
+| `DELETE /v1/clients/:clientId/forms/:formId/api-keys/:keyId` | Sets `revoked_at` → `204`. Idempotent (keeps the original `revokedAt`). | Rotation |
+| `POST /v1/clients/:clientId/forms/:formId/api-keys/verify` `{ key }` | Always `200`: `{ authenticated: true, keyId }` for an active key of this client's form, else `{ authenticated: false }`. An unknown or other client's form is `false`, not a 404, so it doesn't reveal which forms exist. A wrong key isn't a 401, which here means sol-api's own `X-API-Key` was rejected. | Sol Gate |
 
 ### Same-client composite FKs (Wave 3)
 

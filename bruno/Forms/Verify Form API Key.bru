@@ -1,0 +1,29 @@
+meta {
+  name: Verify Form API Key
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/v1/clients/acme-corp/forms/00000000-0000-0000-0000-000000000000/api-keys/verify
+  body: json
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+body:json {
+  {
+    "key": "sgk_paste-a-key-here"
+  }
+}
+
+docs {
+  Sol Gate's check of a caller's form key. Always a 200:
+  { authenticated: true, keyId } for an active key (not revoked, not expired)
+  of this client's form, otherwise { authenticated: false } — including an
+  unknown form or another client's, so it doesn't reveal which forms exist.
+  The key goes in the body, never the URL. No key hashes are ever returned.
+}

@@ -1,0 +1,21 @@
+meta {
+  name: Revoke Form API Key
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/v1/clients/acme-corp/forms/00000000-0000-0000-0000-000000000000/api-keys/00000000-0000-0000-0000-000000000000
+  body: none
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+docs {
+  Sets revoked_at (soft delete, keeps the audit trail) and returns 204.
+  Idempotent: revoking again keeps the original revokedAt. Unknown key, or a
+  key under another form/client → 404.
+}

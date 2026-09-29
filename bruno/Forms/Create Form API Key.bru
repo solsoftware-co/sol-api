@@ -1,0 +1,29 @@
+meta {
+  name: Create Form API Key
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v1/clients/acme-corp/forms/00000000-0000-0000-0000-000000000000/api-keys
+  body: json
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+body:json {
+  {
+    "name": "acme.com production",
+    "expiresAt": null
+  }
+}
+
+docs {
+  Creates a per-form key (sgk_ + 32 random bytes, base64url). The response is
+  the ONLY one that ever contains the plaintext `key` — copy it into the site's
+  server-only env var now; only its SHA-256 is stored. `expiresAt` is optional
+  (ISO 8601, must be in the future). A form under another client is a 404.
+}
