@@ -28,7 +28,6 @@ notificationLogs.get("/", async (c) => {
   const db = createDb(c.env.DATABASE_URL);
   const rows = await listNotificationLogs(db, { clientId, from, to, limit });
   logger.info("listed notification logs", {
-    requestId: c.get("requestId"),
     count: rows.length,
     clientId,
     from,
@@ -66,7 +65,6 @@ notificationLogs.post("/", async (c) => {
     const db = createDb(c.env.DATABASE_URL);
     const log = await createNotificationLog(db, result.data);
     logger.info("created notification log", {
-      requestId: c.get("requestId"),
       logId: log.id,
       clientId: log.clientId,
       workflow: log.workflow,

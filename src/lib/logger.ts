@@ -1,7 +1,8 @@
+import { currentLogScope } from "./log-context.js";
+
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
 export interface LogContext {
-  requestId?: string;
   route?: string;
   [key: string]: unknown;
 }
@@ -33,6 +34,8 @@ function write(level: LogLevel, message: string, context: LogContext = {}): void
     level,
     message,
     timestamp: new Date().toISOString(),
+    // environment, traceId and submissionId, from the request (lib/log-context.ts).
+    ...currentLogScope(),
     ...redactObject(context),
   };
   const line = JSON.stringify(entry);

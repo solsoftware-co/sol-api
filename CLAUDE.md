@@ -47,9 +47,11 @@ src/
 │   └── notification-logs.ts     # GET /v1/notification-logs, GET /v1/notification-logs/:id, POST
 ├── middleware/
 │   ├── auth.ts                  # X-API-Key enforcement via HTTPException
-│   └── error.ts                 # Global handler → envelope shape
+│   ├── error.ts                 # Global handler → envelope shape
+│   └── request-logger.ts        # log scope (environment, traceId, submissionId), "request completed"
 ├── lib/
 │   ├── db.ts                    # neon() factory (fetch transport, no ws)
+│   ├── log-context.ts           # environment, traceId, submissionId on every log line (SOL-46)
 │   └── schema.ts                # Drizzle table definitions (clients, notification_logs)
 ├── types/index.ts               # Env bindings, ErrorCode enum, ApiResponse<T>
 └── validators/
@@ -99,6 +101,10 @@ export const requireApiKey = createMiddleware(async (c, next) => {
   await next();
 });
 ```
+
+### Tracing (SOL-46)
+
+Every log line carries `environment`, a `traceId` and, for a submission, a `submissionId`. The `traceId` is the caller's `X-Trace-Id` (Sol Gate's, forwarded) or a new one; the `submissionId` is only ever the caller's `X-Submission-Id`, never made up. `middleware/request-logger.ts` sets them for the request (AsyncLocalStorage, `lib/log-context.ts`) and returns the `traceId` as `X-Trace-Id`. There is no `requestId`: Cloudflare's own `$metadata.requestId` tells invocations (e.g. a retried call's attempts) apart. `traceId` is one run of work (on every line); `submissionId` is the form submission it's for (only when there is one). A replayed submission would keep its `submissionId` under a new `traceId`. Filter Workers Logs by `submissionId = <id>` for everything that happened to a submission, `traceId = <id>` for one run, or `environment = production`.
 
 ### Testing
 

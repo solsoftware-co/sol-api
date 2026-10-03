@@ -35,7 +35,6 @@ legacyClients.get("/", async (c) => {
   const db = createDb(c.env.DATABASE_URL);
   const rows = await listClients(db, { limit });
   logger.info("listed clients (legacy)", {
-    requestId: c.get("requestId"),
     count: rows.length,
     limit,
   });
@@ -72,7 +71,6 @@ legacyClients.post("/", async (c) => {
     const db = createDb(c.env.DATABASE_URL);
     const client = await insertClient(db, result.data);
     logger.info("created client (legacy)", {
-      requestId: c.get("requestId"),
       clientId: client.id,
     });
     return c.json({ success: true, data: client }, 201);
@@ -119,7 +117,6 @@ legacyClients.patch("/:id", async (c) => {
   }
 
   logger.info("updated client (legacy)", {
-    requestId: c.get("requestId"),
     clientId: id,
     fields: Object.keys(result.data),
   });

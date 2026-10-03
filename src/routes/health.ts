@@ -20,7 +20,6 @@ health.get("/", async (c) => {
     });
   } catch (err) {
     logger.warn("health check failed: database unreachable", {
-      requestId: c.get("requestId"),
       environment: c.env.ENVIRONMENT,
       errorMessage: err instanceof Error ? err.message : String(err),
     });

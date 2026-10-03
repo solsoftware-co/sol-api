@@ -29,7 +29,6 @@ legacyNotificationLogs.post("/", async (c) => {
     const db = createDb(c.env.DATABASE_URL);
     const log = await insertLegacyNotificationLog(db, result.data);
     logger.info("created notification log (legacy)", {
-      requestId: c.get("requestId"),
       logId: log.id,
       clientId: log.client_id,
       workflow: log.workflow,
