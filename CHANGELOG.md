@@ -1,3 +1,10 @@
+# [1.23.0](https://github.com/solsoftware-co/sol-api/compare/v1.22.0...v1.23.0) (2026-10-03)
+
+
+### Features
+
+* log trace and submission ids on every request (SOL-46) ([133456a](https://github.com/solsoftware-co/sol-api/commit/133456a830e91ca4f5e084e0a0b7c0de21c51015))
+
 # [1.22.0](https://github.com/solsoftware-co/sol-api/compare/v1.21.0...v1.22.0) (2026-09-29)
 
 
