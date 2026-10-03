@@ -34,7 +34,6 @@ formApiKeys.post("/:clientId/forms/:formId/api-keys", async (c) => {
     const db = createDb(c.env.DATABASE_URL);
     const created = await createFormApiKey(db, clientId, formId, result.data);
     logger.info("created form api key", {
-      requestId: c.get("requestId"),
       clientId,
       formId,
       keyId: created.id,
@@ -83,7 +82,6 @@ formApiKeys.post("/:clientId/forms/:formId/api-keys/verify", async (c) => {
   const db = createDb(c.env.DATABASE_URL);
   const verified = await verifyFormApiKey(db, clientId, formId, result.data.key);
   logger.info("verified form api key", {
-    requestId: c.get("requestId"),
     clientId,
     formId,
     authenticated: verified.authenticated,
@@ -103,7 +101,7 @@ formApiKeys.delete("/:clientId/forms/:formId/api-keys/:keyId", async (c) => {
   const revoked = await revokeFormApiKey(db, clientId, formId, keyId);
   if (!revoked) return notFound();
 
-  logger.info("revoked form api key", { requestId: c.get("requestId"), clientId, formId, keyId });
+  logger.info("revoked form api key", { clientId, formId, keyId });
   return c.body(null, 204);
 });
 
