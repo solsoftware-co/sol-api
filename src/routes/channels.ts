@@ -1,11 +1,42 @@
 import { Hono } from "hono";
 import { createDb } from "../lib/db.js";
 import { isUuid } from "../lib/validation.js";
-import { listChannels, getChannel } from "../services/channels.js";
-import { notFoundResponse, validationErrorResponse } from "../lib/responses.js";
+import {
+  listChannels,
+  getChannel,
+  createChannel,
+  ClientNotFoundError,
+  ChannelNameTakenError,
+} from "../services/channels.js";
+import { conflictResponse, notFoundResponse, validationErrorResponse } from "../lib/responses.js";
+import { createChannelSchema } from "../validators/channel.js";
+import { logger } from "../lib/logger.js";
 import type { AppEnv } from "../types/index.js";
 
 const channels = new Hono<AppEnv>();
+
+// Creates the channel with its email addresses or Slack webhook. Responds
+// with what GET /channels/:id returns. Never logs addresses or the webhook.
+channels.post("/:clientId/channels", async (c) => {
+  const clientId = c.req.param("clientId");
+
+  const body = await c.req.json().catch(() => null);
+  const result = createChannelSchema.safeParse(body);
+  if (!result.success) {
+    return validationErrorResponse(c, "Validation failed", result.error.issues);
+  }
+
+  try {
+    const db = createDb(c.env.DATABASE_URL);
+    const created = await createChannel(db, clientId, result.data);
+    logger.info("created channel", { clientId, channelId: created.id, type: created.type });
+    return c.json({ success: true, data: created }, 201);
+  } catch (err) {
+    if (err instanceof ClientNotFoundError) return notFoundResponse(c, err.message);
+    if (err instanceof ChannelNameTakenError) return conflictResponse(c, err.message);
+    throw err;
+  }
+});
 
 // ?ids=a,b resolves specific channels (unknown or other-client ids are simply
 // absent from the result); without it, every channel the client has. Each

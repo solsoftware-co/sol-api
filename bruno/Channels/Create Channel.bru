@@ -1,0 +1,35 @@
+meta {
+  name: Create Channel
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/v1/clients/{{clientId}}/channels
+  body: json
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+body:json {
+  {
+    "type": "email",
+    "name": "Sales team",
+    "description": "Inbound leads",
+    "emailAddresses": ["sales@acme.com"]
+  }
+}
+
+docs {
+  Creates a channel with its type-specific half in one transaction (SOL-49).
+  The body is keyed on type:
+    email: { type, name, description?, emailAddresses: [at least one] }
+    slack: { type, name, description?, webhookUrl: "https://hooks.slack.com/..." }
+  Fields from the other type are rejected (422).
+
+  201 responds with the same shape as Get Channel. 404 if the client doesn't
+  exist; 409 CONFLICT if the client already has a channel with this name.
+}

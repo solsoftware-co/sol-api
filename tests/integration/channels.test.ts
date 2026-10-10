@@ -143,3 +143,127 @@ describe("GET /v1/clients/:clientId/channels/:channelId", () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe("POST /v1/clients/:clientId/channels", () => {
+  function post(clientId: string, body: unknown, init: RequestInit = authed()) {
+    return app.request(
+      `/v1/clients/${clientId}/channels`,
+      {
+        ...init,
+        method: "POST",
+        headers: { ...(init.headers as Record<string, string>), "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      },
+      TEST_ENV
+    );
+  }
+
+  it(
+    "creates an email channel and responds with what GET returns",
+    skipIfNoDb(async () => {
+      const res = await post(CLIENT_ID, {
+        type: "email",
+        name: "Created email group",
+        description: "From the create route",
+        emailAddresses: ["x@acme.com", "y@acme.com"],
+      });
+      expect(res.status).toBe(201);
+      const created = ((await res.json()) as any).data;
+      expect(created).toEqual({
+        id: expect.any(String),
+        clientId: CLIENT_ID,
+        type: "email",
+        name: "Created email group",
+        description: "From the create route",
+        createdAt: expect.any(String),
+        updatedAt: expect.any(String),
+        email: { emailAddresses: ["x@acme.com", "y@acme.com"] },
+      });
+
+      const got = await app.request(`/v1/clients/${CLIENT_ID}/channels/${created.id}`, authed(), TEST_ENV);
+      expect(((await got.json()) as any).data).toEqual(created);
+    })
+  );
+
+  it(
+    "creates a Slack channel with its webhook",
+    skipIfNoDb(async () => {
+      const res = await post(CLIENT_ID, {
+        type: "slack",
+        name: "#created",
+        webhookUrl: "https://hooks.slack.com/services/T000/B000/CREATED",
+      });
+      expect(res.status).toBe(201);
+      const created = ((await res.json()) as any).data;
+      expect(created).toMatchObject({
+        clientId: CLIENT_ID,
+        type: "slack",
+        name: "#created",
+        description: null,
+        slack: { webhookUrl: "https://hooks.slack.com/services/T000/B000/CREATED" },
+      });
+      expect(created).not.toHaveProperty("email");
+
+      const got = await app.request(`/v1/clients/${CLIENT_ID}/channels/${created.id}`, authed(), TEST_ENV);
+      expect(((await got.json()) as any).data).toEqual(created);
+    })
+  );
+
+  it(
+    "returns 409 for a name the client already uses, and writes nothing",
+    skipIfNoDb(async () => {
+      const res = await post(CLIENT_ID, { type: "email", name: "Sales team", emailAddresses: ["dup@acme.com"] });
+      expect(res.status).toBe(409);
+      const body = (await res.json()) as any;
+      expect(body.error.code).toBe("CONFLICT");
+
+      const sql = neon(DB_URL!);
+      const rows = await sql`
+        SELECT 1 FROM email_groups WHERE 'dup@acme.com' = ANY(email_addresses)
+          AND channel_id IN (SELECT id FROM channels WHERE client_id = ${CLIENT_ID})
+      `;
+      expect(rows).toHaveLength(0);
+    })
+  );
+
+  it(
+    "allows the same name under a different client",
+    skipIfNoDb(async () => {
+      const res = await post(OTHER_CLIENT_ID, { type: "email", name: "Sales team", emailAddresses: ["o@other.com"] });
+      expect(res.status).toBe(201);
+    })
+  );
+
+  it(
+    "returns 404 for an unknown client, and writes nothing",
+    skipIfNoDb(async () => {
+      const unknown = `test-channels-missing-${Date.now()}`;
+      const res = await post(unknown, { type: "email", name: "Orphan", emailAddresses: ["a@acme.com"] });
+      expect(res.status).toBe(404);
+      expect(((await res.json()) as any).error.code).toBe("NOT_FOUND");
+
+      const sql = neon(DB_URL!);
+      expect(await sql`SELECT 1 FROM channels WHERE client_id = ${unknown}`).toHaveLength(0);
+    })
+  );
+
+  it("returns 422 for an invalid body", async () => {
+    const res = await post(CLIENT_ID, { type: "email", name: "No addresses", emailAddresses: [] });
+    expect(res.status).toBe(422);
+    expect(((await res.json()) as any).error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("returns 422 for a body that isn't JSON", async () => {
+    const res = await app.request(
+      `/v1/clients/${CLIENT_ID}/channels`,
+      authed({ method: "POST", body: "not json" }),
+      TEST_ENV
+    );
+    expect(res.status).toBe(422);
+  });
+
+  it("returns 401 without X-API-Key", async () => {
+    const res = await post(CLIENT_ID, { type: "slack", name: "x", webhookUrl: "https://hooks.slack.com/x" }, {});
+    expect(res.status).toBe(401);
+  });
+});

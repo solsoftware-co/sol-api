@@ -12,6 +12,13 @@ export function notFoundResponse(c: Context<AppEnv>, message: string) {
   );
 }
 
+export function conflictResponse(c: Context<AppEnv>, message: string) {
+  return c.json(
+    { success: false as const, error: { code: ErrorCode.CONFLICT, message, details: null } },
+    409
+  );
+}
+
 // Same idea for 422s. `details` defaults to null for ad-hoc messages (bad
 // query params, etc.); zod's safeParse failures pass result.error.issues
 // explicitly — there's no separate zod-specific wrapper since the only
