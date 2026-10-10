@@ -1,0 +1,31 @@
+meta {
+  name: Link Form Channel
+  type: http
+  seq: 10
+}
+
+put {
+  url: {{baseUrl}}/v1/clients/{{clientId}}/forms/00000000-0000-0000-0000-000000000000/channels/00000000-0000-0000-0000-000000000000
+  body: json
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+body:json {
+  {
+    "subject": "New sign-up",
+    "includeFields": null,
+    "integrationIds": ["00000000-0000-0000-0000-000000000000"]
+  }
+}
+
+docs {
+  Links the form to one of the client's channels, or replaces how the form
+  notifies it. PUT replaces: settings left out go back to their defaults.
+  integrationIds must be integrations the form runs (422 otherwise).
+  Responds with the whole form. 404 if the form or the channel isn't this
+  client's.
+}

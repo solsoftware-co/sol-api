@@ -2,13 +2,9 @@ import { eq, and, asc, isNull, gt, or, sql } from "drizzle-orm";
 import { form_api_keys } from "../lib/schema.js";
 import type { Db } from "../lib/db.js";
 import { pgErrorCode } from "../lib/pg-errors.js";
+import { FormNotFoundError } from "./forms.js";
 
-export class FormNotFoundError extends Error {
-  constructor(formId: string) {
-    super(`Form not found: ${formId}`);
-    this.name = "FormNotFoundError";
-  }
-}
+export { FormNotFoundError };
 
 export interface FormApiKeyRow {
   id: string;

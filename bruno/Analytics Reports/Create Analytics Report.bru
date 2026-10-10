@@ -1,0 +1,38 @@
+meta {
+  name: Create Analytics Report
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v1/clients/{{clientId}}/analytics-reports
+  body: json
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+body:json {
+  {
+    "siteId": "00000000-0000-0000-0000-000000000000",
+    "enabled": true,
+    "cron": "0 9 * * 2",
+    "lookback": "last_week",
+    "channelIds": ["00000000-0000-0000-0000-000000000000"]
+  }
+}
+
+docs {
+  Creates an analytics report for one of the client's sites, sent to the
+  given channels, in one transaction (SOL-52).
+    cron: 5 fields, read in the client's timezone ("0 9 * * 2" = Tuesdays 9am)
+    lookback: last_week | last_month | last_7_days | last_28_days
+    enabled: default true; channelIds: default []
+
+  siteId and channelIds must be this client's. 201 responds with the same
+  shape as Get Analytics Report (and the report appears in the scheduler's
+  List Analytics Reports). 422 VALIDATION_ERROR with details.siteId /
+  details.channelIds naming ids that aren't this client's.
+}

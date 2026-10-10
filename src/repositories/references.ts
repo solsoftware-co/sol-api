@@ -37,8 +37,11 @@ export async function findMissingIds(
 // Thrown both by the pre-check and when a same-client FK fails in a race, so
 // the two paths produce the identical response.
 export class InvalidReferencesError extends Error {
-  constructor(public readonly details: Record<string, string[]>) {
-    super("Referenced records not found for this client");
+  constructor(
+    public readonly details: Record<string, string[]>,
+    message = "Referenced records not found for this client"
+  ) {
+    super(message);
     this.name = "InvalidReferencesError";
   }
 }

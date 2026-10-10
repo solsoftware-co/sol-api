@@ -1,0 +1,20 @@
+meta {
+  name: Unlink Form Channel
+  type: http
+  seq: 11
+}
+
+delete {
+  url: {{baseUrl}}/v1/clients/{{clientId}}/forms/00000000-0000-0000-0000-000000000000/channels/00000000-0000-0000-0000-000000000000
+  body: none
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+docs {
+  Unlinks the channel from the form. Responds with the whole form. 404 if
+  not linked.
+}

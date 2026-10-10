@@ -1,0 +1,51 @@
+meta {
+  name: Create Site
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/v1/clients/{{clientId}}/sites
+  body: json
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+body:json {
+  {
+    "name": "Acme marketing site",
+    "description": "acme.com",
+    "domain": "acme.com",
+    "stagingDomain": "staging.acme.com",
+    "ga4PropertyId": "123456789",
+    "ga4ServiceAccountId": "00000000-0000-0000-0000-000000000000",
+    "sanityConfig": {
+      "projectId": "your-sanity-project",
+      "prodDataset": "production",
+      "stagingDataset": "staging"
+    },
+    "githubRepo": {
+      "repoUrl": "https://github.com/your-org/your-site",
+      "defaultBranch": "main",
+      "stagingBranch": "staging"
+    }
+  }
+}
+
+docs {
+  Creates a site with its Sanity config and GitHub repo in one transaction
+  (SOL-52). Only name is required; sanityConfig, githubRepo, and
+  ga4ServiceAccountId can be left out or null. domain / stagingDomain are
+  bare hosts (no https://). githubRepo.defaultBranch defaults to "main".
+
+  ga4ServiceAccountId must be one of this client's service accounts
+  (create one with Create Google Service Account first).
+
+  201 responds with the same shape as Get Client Site (without the service
+  account's key). 422 VALIDATION_ERROR with details.ga4ServiceAccountId if
+  the service account isn't this client's (unknown and other-client ids are
+  treated the same). 404 if the client doesn't exist.
+}

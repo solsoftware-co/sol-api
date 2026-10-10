@@ -1,0 +1,26 @@
+meta {
+  name: Update Form
+  type: http
+  seq: 7
+}
+
+patch {
+  url: {{baseUrl}}/v1/clients/{{clientId}}/forms/00000000-0000-0000-0000-000000000000
+  body: json
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+body:json {
+  {
+    "name": "Renamed form"
+  }
+}
+
+docs {
+  Updates the form's own fields: any of name, description, payloadSchema.
+  Links have their own requests. Responds with the whole form.
+}
