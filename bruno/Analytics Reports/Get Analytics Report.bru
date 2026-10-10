@@ -1,0 +1,20 @@
+meta {
+  name: Get Analytics Report
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/v1/clients/{{clientId}}/analytics-reports/00000000-0000-0000-0000-000000000000
+  body: none
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+docs {
+  One of the client's analytics reports: the same shape as each item in the
+  scheduler's List Analytics Reports. Another client's report is a 404.
+}

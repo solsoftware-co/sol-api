@@ -201,10 +201,13 @@ export const sites = pgTable("sites", {
     foreignColumns: [clients.id],
     name: "sites_client_id_fkey",
   }),
+  // SOL-52: same-client, like google_sheets_integrations (0013) — a site can
+  // only use its own client's service account for GA4. Not enforced while
+  // ga4_service_account_id is NULL (MATCH SIMPLE).
   foreignKey({
-    columns: [table.ga4_service_account_id],
-    foreignColumns: [google_service_accounts.id],
-    name: "sites_ga4_service_account_id_fkey",
+    columns: [table.client_id, table.ga4_service_account_id],
+    foreignColumns: [google_service_accounts.client_id, google_service_accounts.id],
+    name: "sites_client_id_ga4_service_account_id_fkey",
   }),
   unique("sites_client_id_id_key").on(table.client_id, table.id),
 ]);
