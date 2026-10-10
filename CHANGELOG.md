@@ -1,3 +1,11 @@
+# [1.25.0](https://github.com/solsoftware-co/sol-api/compare/v1.24.0...v1.25.0) (2026-10-10)
+
+
+### Features
+
+* create forms with integration and channel links (SOL-51) ([d69ff02](https://github.com/solsoftware-co/sol-api/commit/d69ff0287444fa6bb335742dec7ea4a86fa685b4))
+* create sites and analytics reports (SOL-52) ([7b684c8](https://github.com/solsoftware-co/sol-api/commit/7b684c8c50869d624a135a6bb563b268885f8283))
+
 # [1.24.0](https://github.com/solsoftware-co/sol-api/compare/v1.23.0...v1.24.0) (2026-10-10)
 
 
