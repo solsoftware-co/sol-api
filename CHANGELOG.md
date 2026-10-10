@@ -1,3 +1,11 @@
+# [1.24.0](https://github.com/solsoftware-co/sol-api/compare/v1.23.0...v1.24.0) (2026-10-10)
+
+
+### Features
+
+* create channels (email + Slack) (SOL-49) ([4c2d5f4](https://github.com/solsoftware-co/sol-api/commit/4c2d5f459bb8b5851d2a0925fdbbd1a548acec6b))
+* create integrations and Google service accounts (SOL-50) ([d711463](https://github.com/solsoftware-co/sol-api/commit/d7114635e806b5923042d1a67733cae5ab5a0735))
+
 # [1.23.0](https://github.com/solsoftware-co/sol-api/compare/v1.22.0...v1.23.0) (2026-10-03)
 
 
