@@ -274,10 +274,11 @@ export async function insertTestIntegration(
     const gs = opts.googleSheets;
     await sql`
       INSERT INTO google_sheets_integrations (
-        integration_id, google_service_account_id, spreadsheet_id, sheet_name, column_mapping, table_anchor
+        integration_id, client_id, google_service_account_id, spreadsheet_id, sheet_name, column_mapping, table_anchor
       )
       VALUES (
         ${integrationId},
+        ${opts.clientId},
         ${gs.googleServiceAccountId},
         ${gs.spreadsheetId ?? "test-spreadsheet-id"},
         ${gs.sheetName ?? "Sheet1"},

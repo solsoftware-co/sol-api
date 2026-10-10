@@ -28,3 +28,12 @@ export async function getClientMinimal(db: Db, id: string): Promise<ClientMinima
     .limit(1);
   return rows[0] ?? null;
 }
+
+// Thrown by a create under a client that doesn't exist: the insert's
+// client_id FK fails (23503), which the route turns into a 404.
+export class ClientNotFoundError extends Error {
+  constructor(clientId: string) {
+    super(`Client not found: ${clientId}`);
+    this.name = "ClientNotFoundError";
+  }
+}

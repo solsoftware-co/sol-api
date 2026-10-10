@@ -3,7 +3,8 @@ import type { ChannelType } from "../lib/schema.js";
 import { listClientChannels, getClientChannel, insertChannel, type ChannelRow } from "../repositories/channels.js";
 import type { CreateChannelInput } from "../validators/channel.js";
 
-export { ClientNotFoundError, ChannelNameTakenError } from "../repositories/channels.js";
+export { ChannelNameTakenError } from "../repositories/channels.js";
+export { ClientNotFoundError } from "../repositories/clients.js";
 
 export interface ChannelResponse {
   id: string;

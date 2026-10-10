@@ -47,6 +47,8 @@ export const google_service_accounts = pgTable("google_service_accounts", {
     foreignColumns: [clients.id],
     name: "google_service_accounts_client_id_fkey",
   }),
+  // SOL-50: the target of google_sheets_integrations' same-client FK.
+  unique("google_service_accounts_client_id_id_key").on(table.client_id, table.id),
 ]);
 
 // Wave 3 (SOL-35) of the client data model rework (see docs/design/data-model.md).
@@ -154,8 +156,12 @@ export const mailchimp_integrations = pgTable("mailchimp_integrations", {
   }),
 ]);
 
+// SOL-50: carries its own client_id with composite FKs to both sides (the
+// Wave 3 pattern), so a Sheets integration can only ever authenticate with
+// its own client's service account — the database guarantees it, not callers.
 export const google_sheets_integrations = pgTable("google_sheets_integrations", {
   integration_id: uuid("integration_id").primaryKey(),
+  client_id: text("client_id").notNull(),
   google_service_account_id: uuid("google_service_account_id").notNull(),
   spreadsheet_id: text("spreadsheet_id").notNull(),
   sheet_name: text("sheet_name"),
@@ -163,14 +169,14 @@ export const google_sheets_integrations = pgTable("google_sheets_integrations", 
   table_anchor: text("table_anchor").default("A1"),
 }, (table) => [
   foreignKey({
-    columns: [table.integration_id],
-    foreignColumns: [integrations.id],
-    name: "google_sheets_integrations_integration_id_fkey",
+    columns: [table.client_id, table.integration_id],
+    foreignColumns: [integrations.client_id, integrations.id],
+    name: "google_sheets_integrations_client_id_integration_id_fkey",
   }),
   foreignKey({
-    columns: [table.google_service_account_id],
-    foreignColumns: [google_service_accounts.id],
-    name: "google_sheets_integrations_google_service_account_id_fkey",
+    columns: [table.client_id, table.google_service_account_id],
+    foreignColumns: [google_service_accounts.client_id, google_service_accounts.id],
+    name: "google_sheets_integrations_client_id_gsa_id_fkey",
   }),
 ]);
 

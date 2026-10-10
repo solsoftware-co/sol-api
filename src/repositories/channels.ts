@@ -2,13 +2,7 @@ import { eq, and, asc, inArray } from "drizzle-orm";
 import { channels, email_groups, slack_channels, type ChannelType } from "../lib/schema.js";
 import type { Db } from "../lib/db.js";
 import { pgErrorCode } from "../lib/pg-errors.js";
-
-export class ClientNotFoundError extends Error {
-  constructor(clientId: string) {
-    super(`Client not found: ${clientId}`);
-    this.name = "ClientNotFoundError";
-  }
-}
+import { ClientNotFoundError } from "./clients.js";
 
 export class ChannelNameTakenError extends Error {
   constructor(name: string) {
