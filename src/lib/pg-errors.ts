@@ -17,3 +17,23 @@ export function pgErrorCode(err: unknown): string | undefined {
   }
   return undefined;
 }
+
+// The violated constraint's name (e.g. "integrations_client_id_fkey"), for
+// telling apart which FK failed when one insert has several. Same lookup as
+// pgErrorCode: on the error itself, or on the driver error drizzle wraps.
+export function pgErrorConstraint(err: unknown): string | undefined {
+  if (!err || typeof err !== "object") return undefined;
+  if ("constraint" in err && typeof (err as { constraint: unknown }).constraint === "string") {
+    return (err as { constraint: string }).constraint;
+  }
+  const cause = (err as { cause?: unknown }).cause;
+  if (
+    cause &&
+    typeof cause === "object" &&
+    "constraint" in cause &&
+    typeof (cause as { constraint: unknown }).constraint === "string"
+  ) {
+    return (cause as { constraint: string }).constraint;
+  }
+  return undefined;
+}

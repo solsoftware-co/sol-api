@@ -1,0 +1,39 @@
+meta {
+  name: Create Integration (Google Sheets)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/v1/clients/{{clientId}}/integrations
+  body: json
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+body:json {
+  {
+    "type": "google_sheets",
+    "name": "Form submissions",
+    "googleServiceAccountId": "00000000-0000-0000-0000-000000000000",
+    "spreadsheetId": "your-spreadsheet-id",
+    "sheetName": null,
+    "columnMapping": ["_timestamp", "submitterName", "submitterEmail"],
+    "tableAnchor": "A1"
+  }
+}
+
+docs {
+  Creates an integration with its Google Sheets configuration in one
+  transaction (SOL-50). googleServiceAccountId must be one of this client's
+  service accounts (create one with Create Google Service Account first).
+  sheetName null means the first sheet; tableAnchor defaults to "A1".
+
+  201 responds with the same shape as Get Integration (Google Sheets).
+  422 VALIDATION_ERROR with details.googleServiceAccountId if the service
+  account isn't this client's (unknown and other-client ids are treated the
+  same). 404 if the client doesn't exist.
+}

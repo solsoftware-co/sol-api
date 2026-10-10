@@ -1,0 +1,36 @@
+meta {
+  name: Create Integration (Mailchimp)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/v1/clients/{{clientId}}/integrations
+  body: json
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+body:json {
+  {
+    "type": "mailchimp",
+    "name": "Newsletter",
+    "description": "Mailchimp newsletter",
+    "apiKey": "your-mailchimp-key-us14",
+    "listId": "your-audience-id",
+    "serverPrefix": "us14"
+  }
+}
+
+docs {
+  Creates an integration with its Mailchimp configuration in one transaction
+  (SOL-50). serverPrefix is the datacenter after the dash in the API key,
+  e.g. "us14". listId is the Audience ID (Audience → Settings → Audience name
+  and defaults).
+
+  201 responds with the same shape as Get Integration (Mailchimp). 404 if the
+  client doesn't exist; 422 for an invalid body.
+}
