@@ -1,0 +1,20 @@
+meta {
+  name: Unlink Form Integration
+  type: http
+  seq: 9
+}
+
+delete {
+  url: {{baseUrl}}/v1/clients/{{clientId}}/forms/00000000-0000-0000-0000-000000000000/integrations/00000000-0000-0000-0000-000000000000
+  body: none
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+docs {
+  Unlinks the integration, and removes it from every notification that
+  reported on it. Responds with the whole form. 404 if not linked.
+}

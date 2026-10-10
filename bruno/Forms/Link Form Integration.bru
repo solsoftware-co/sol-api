@@ -1,0 +1,27 @@
+meta {
+  name: Link Form Integration
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{baseUrl}}/v1/clients/{{clientId}}/forms/00000000-0000-0000-0000-000000000000/integrations/00000000-0000-0000-0000-000000000000
+  body: json
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+body:json {
+  {
+    "fieldMapping": { "email": "email" }
+  }
+}
+
+docs {
+  Links the form to one of the client's integrations, or replaces the
+  link's fieldMapping. Responds with the whole form. 404 if the form or the
+  integration isn't this client's.
+}

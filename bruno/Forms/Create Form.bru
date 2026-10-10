@@ -1,0 +1,105 @@
+meta {
+  name: Create Form
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/v1/clients/{{clientId}}/forms
+  body: json
+  auth: none
+}
+
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+body:json {
+  {
+    "name": "Contact form",
+    "description": "Contact form on acme.com",
+    "payloadSchema": {
+      "type": "object",
+      "required": ["email", "name"],
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string" },
+        "message": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "integrations": [
+      {
+        "integrationId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "fieldMapping": { "email": "email" }
+      },
+      {
+        "integrationId": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        "fieldMapping": {}
+      }
+    ],
+    "channels": [
+      {
+        "channelId": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        "subject": "New contact form submission",
+        "includeFields": null,
+        "integrationIds": [
+          "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+        ]
+      },
+      {
+        "channelId": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+        "message": "New contact form submission",
+        "integrationIds": ["aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"]
+      },
+      {
+        "channelId": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+        "subject": "Someone filled in the contact form",
+        "includeFields": ["name", "email"],
+        "integrationIds": []
+      }
+    ]
+  }
+}
+
+docs {
+  Creates a form and all of its links in one transaction (SOL-51). Replace
+  the placeholder ids with real ones: integrations and channels must already
+  exist under this client (create them first).
+
+  The example, with placeholder ids standing in for:
+    aaaa… = a Mailchimp integration     cccc… = "Sales team" email group
+    bbbb… = a Google Sheets integration dddd… = "#leads" Slack channel
+                                        eeee… = "Ops" email group
+  The form runs Mailchimp and Sheets. Sales gets an email reporting both
+  results; #leads gets a Slack message reporting only Mailchimp's; Ops gets
+  a plain "form submitted" email with just name and email, reporting no
+  integration results.
+
+  How the body maps onto the tables:
+    integrations[]                 → form_integrations
+      integrationId (required), fieldMapping (default {}): the form's
+      fields → that integration's fields
+    channels[]                     → form_channels
+      channelId (required); optional: template (default
+      "form_submission"), subject (email only), includeFields (null =
+      every submitted field), message (fixed text, e.g. Slack)
+    channels[].integrationIds[]    → form_channel_integrations
+      which of this form's integrations that channel's notification reports
+      on: one row per (channel, integration). Each must also be in
+      integrations[]; empty = reports on none.
+
+  This example writes 1 form, 2 form_integrations, 3 form_channels, and 3
+  form_channel_integrations rows: (Sales, Mailchimp), (Sales, Sheets),
+  (#leads, Mailchimp).
+
+  integrations and channels are optional (default []): create a bare form
+  and add links later with Link Form Integration / Link Form Channel.
+
+  201 responds with the same shape as Get Form. 422 VALIDATION_ERROR with
+  details.integrationIds / details.channelIds naming ids that aren't this
+  client's (unknown and other-client ids are treated the same), or for a
+  channel reporting on an integration not in integrations[]. 404 if the
+  client doesn't exist.
+}
