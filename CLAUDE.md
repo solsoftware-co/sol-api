@@ -112,6 +112,14 @@ Tests run inside the actual CF Workers runtime via `@cloudflare/vitest-pool-work
 
 Integration tests need a live `DATABASE_URL` exposed via the `cloudflare:test` module's `env` export (bridged from `process.env.DATABASE_URL` in `vitest.config.ts`'s `miniflare.bindings`) — not `process.env` directly, since test files run inside a workerd isolate. Without it set, DB-backed assertions skip via a `skipIfNoDb` guard rather than fail.
 
+### E2E fixtures for other services (SOL-10)
+
+Other services' PR previews bind to **sol-api-dev** (the persistent `dev` Neon branch) and run their e2e suites against fixed sandbox fixtures there. sol-api owns that seed: `db/seeds/e2e/` has one module per consuming service (today `sol-integrate.ts`: 2 Mailchimp + 2 Google Sheets integrations and a Google service account under client `sol`), and `npm run db:seed:e2e` (`scripts/seed-e2e.ts`) upserts them all in one transaction. It runs in `release.yml`'s `deploy-dev` job on every merge to `main` (after the deploy, so a seed problem never blocks dev), and on demand from **Actions → Seed Dev** (`seed-dev.yml`). Run that after `npm run db:branch:reset`, which wipes the fixtures. `tests/integration/e2e-seed.test.ts` seeds a throwaway client on each PR's branch and reads the rows back through the API, so schema drift breaks CI instead of the next dev deploy.
+
+- **Secrets** (sandbox only, the same names sol-integrate uses): `MAILCHIMP_SANDBOX_API_KEY`, `MAILCHIMP_SANDBOX_AUDIENCE_ID`, `GOOGLE_SHEETS_SANDBOX_SERVICE_ACCOUNT` (the JSON key file — the email is read from it), `GOOGLE_SHEETS_SANDBOX_SPREADSHEET_ID`, plus the existing `DATABASE_URL_DEV`.
+- **IDs are a contract:** fixture IDs, the Sheets tab and `column_mapping` must match the consumer's tests (`sol-integrate/tests/e2e/fixtures.ts`). Change both together.
+- **Only ever seed dev.** The rows hold sandbox credentials and mean nothing elsewhere.
+
 End-to-end smoke tests against a live deployed Worker live in `tests/e2e/` (`vitest.e2e.config.ts`, run via `npm run test:e2e`), gated on `PREVIEW_URL` — they run last, after PR preview deploys and after staging/production releases, and are deliberately shallow (auth + one representative request per resource), not a re-test of business logic.
 
 ## Specs reference

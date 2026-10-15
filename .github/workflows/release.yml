@@ -146,6 +146,19 @@ jobs:
         run: |
           echo "${{ secrets.DATABASE_URL_DEV }}" | npx wrangler secret put DATABASE_URL --env dev
           echo "${{ secrets.API_KEY_DEV }}" | npx wrangler secret put API_KEY --env dev
+      # Other services' PR previews bind to sol-api-dev and run their e2e
+      # suites against fixed sandbox fixtures in this database (SOL-10) — see
+      # db/seeds/e2e/. Upserts, so every merge re-asserts them; after deploying,
+      # so a seed problem never stops dev itself from deploying. seed-dev.yml
+      # runs the same thing on demand, e.g. after `npm run db:branch:reset`.
+      - name: Seed e2e fixtures into dev
+        run: npm run db:seed:e2e
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_DEV }}
+          MAILCHIMP_SANDBOX_API_KEY: ${{ secrets.MAILCHIMP_SANDBOX_API_KEY }}
+          MAILCHIMP_SANDBOX_AUDIENCE_ID: ${{ secrets.MAILCHIMP_SANDBOX_AUDIENCE_ID }}
+          GOOGLE_SHEETS_SANDBOX_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_SHEETS_SANDBOX_SERVICE_ACCOUNT }}
+          GOOGLE_SHEETS_SANDBOX_SPREADSHEET_ID: ${{ secrets.GOOGLE_SHEETS_SANDBOX_SPREADSHEET_ID }}
 
   # Gated by the "production" GitHub Environment — requires manual approval
   # (see repo Settings → Environments → production) before this job starts.
