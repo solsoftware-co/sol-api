@@ -1,0 +1,37 @@
+name: Seed Dev
+
+# Re-seeds the e2e fixtures other services' PR previews rely on into the
+# persistent `dev` database (sol-api-dev), without waiting for a merge to
+# main. Run it from the Actions tab after `npm run db:branch:reset` (which
+# resets dev from staging and wipes them), or after rotating a sandbox
+# secret. release.yml's deploy-dev job runs the same seed on every merge.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    name: Seed e2e fixtures into dev
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      # The seed's foreign keys need the current schema.
+      - name: Apply migrations to dev
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_DEV }}
+      - name: Seed e2e fixtures into dev
+        run: npm run db:seed:e2e
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_DEV }}
+          MAILCHIMP_SANDBOX_API_KEY: ${{ secrets.MAILCHIMP_SANDBOX_API_KEY }}
+          MAILCHIMP_SANDBOX_AUDIENCE_ID: ${{ secrets.MAILCHIMP_SANDBOX_AUDIENCE_ID }}
+          GOOGLE_SHEETS_SANDBOX_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_SHEETS_SANDBOX_SERVICE_ACCOUNT }}
+          GOOGLE_SHEETS_SANDBOX_SPREADSHEET_ID: ${{ secrets.GOOGLE_SHEETS_SANDBOX_SPREADSHEET_ID }}
