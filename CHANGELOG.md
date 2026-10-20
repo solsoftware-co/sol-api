@@ -1,3 +1,10 @@
+# [1.26.0](https://github.com/solsoftware-co/sol-api/compare/v1.25.0...v1.26.0) (2026-10-20)
+
+
+### Features
+
+* seed other services' e2e fixtures into dev (SOL-10) ([e5f9ab5](https://github.com/solsoftware-co/sol-api/commit/e5f9ab5708b8a1afd4e738be4df730a5678df515))
+
 # [1.25.0](https://github.com/solsoftware-co/sol-api/compare/v1.24.0...v1.25.0) (2026-10-10)
 
 
